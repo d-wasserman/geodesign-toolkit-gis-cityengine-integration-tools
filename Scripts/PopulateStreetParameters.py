@@ -3,7 +3,7 @@
 # Purpose: This tool is designed to populate with default fields and values for street shapes and is designed
 # to add core complete street rule fields. 
 # Current Owner: David Wasserman
-# Last Modified: 10/10/2015
+# Last Modified: 3/5/2016
 # Copyright:  (c) Co-Adaptive- David Wasserman
 # ArcGIS Version:   10.3
 # Python Version:   2.7
@@ -102,6 +102,62 @@ Bridge_Display = "Bridge_Display"
 
 
 # Function Definitions
+def funcReport(function=None,reportBool=False):
+    """This decorator function is designed to be used as a wrapper with other functions to enable basic try and except
+     reporting (if function fails it will report the name of the function that failed and its arguments. If a report
+      boolean is true the function will report inputs and outputs of a function.-David Wasserman"""
+    def funcReport_Decorator(function):
+        def funcWrapper(*args, **kwargs):
+            try:
+                funcResult = function(*args, **kwargs)
+                if reportBool:
+                    print("Function:{0}".format(str(function.__name__)))
+                    print("     Input(s):{0}".format(str(args)))
+                    print("     Ouput(s):{0}".format(str(funcResult)))
+                return funcResult
+            except Exception as e:
+                print("{0} - function failed -|- Function arguments were:{1}.".format(str(function.__name__), str(args)))
+                print(e.args[0])
+        return funcWrapper
+    if not function:  # User passed in a bool argument
+        def waiting_for_function(function):
+            return funcReport_Decorator(function)
+        return waiting_for_function
+    else:
+        return funcReport_Decorator(function)
+
+
+def arcToolReport(function=None, arcToolMessageBool=False, arcProgressorBool=False):
+    """This decorator function is designed to be used as a wrapper with other GIS functions to enable basic try and except
+     reporting (if function fails it will report the name of the function that failed and its arguments. If a report
+      boolean is true the function will report inputs and outputs of a function.-David Wasserman"""
+    def arcToolReport_Decorator(function):
+        def funcWrapper(*args, **kwargs):
+            try:
+                funcResult = function(*args, **kwargs)
+                if arcToolMessageBool:
+                    arcpy.AddMessage("Function:{0}".format(str(function.__name__)))
+                    arcpy.AddMessage("     Input(s):{0}".format(str(args)))
+                    arcpy.AddMessage("     Ouput(s):{0}".format(str(funcResult)))
+                if arcProgressorBool:
+                    arcpy.SetProgressorLabel("Function:{0}".format(str(function.__name__)))
+                    arcpy.SetProgressorLabel("     Input(s):{0}".format(str(args)))
+                    arcpy.SetProgressorLabel("     Ouput(s):{0}".format(str(funcResult)))
+                return funcResult
+            except Exception as e:
+                arcpy.AddMessage(
+                    "{0} - function failed -|- Function arguments were:{1}.".format(str(function.__name__), str(args)))
+                print("{0} - function failed -|- Function arguments were:{1}.".format(str(function.__name__), str(args)))
+                print(e.args[0])
+        return funcWrapper
+    if not function:  # User passed in a bool argument
+        def waiting_for_function(function):
+            return  arcToolReport_Decorator(function)
+        return waiting_for_function
+    else:
+        return arcToolReport_Decorator(function)
+
+@arcToolReport
 def arcPrint(string, progressor_Bool=False):
     # This function is used to simplify using arcpy reporting for tool creation,if progressor bool is true it will
     # create a tool label.
@@ -120,7 +176,7 @@ def arcPrint(string, progressor_Bool=False):
         arcpy.AddMessage("Could not create message, bad arguments.")
         pass
 
-
+@arcToolReport
 def FieldExist(featureclass, fieldname):
     # Check if a field in a feature class field exists and return true it does, false if not.
     fieldList = arcpy.ListFields(featureclass, fieldname)
@@ -132,6 +188,7 @@ def FieldExist(featureclass, fieldname):
 
 
 # CR: add comment describing functionality and parameter purposes (apply to all instances)
+@arcToolReport
 def AddNewField(in_table, field_name, field_type, field_precision="#", field_scale="#", field_length="#",
                 field_alias="#", field_is_nullable="#", field_is_required="#", field_domain="#"):
     # Add a new field if it currently does not exist...add field alone is slower than checking first.
@@ -146,7 +203,7 @@ def AddNewField(in_table, field_name, field_type, field_precision="#", field_sca
                                   field_alias,
                                   field_is_nullable, field_is_required, field_domain)
 
-
+@arcToolReport
 def buffDist(bikelnWidth):
     if bikelnWidth > 1.6:
         return 1
@@ -155,14 +212,14 @@ def buffDist(bikelnWidth):
     else:
         return 0
 
-
+@arcToolReport
 def ifBelowThreshZero(number, threshold):
     if number < threshold:
         return 0
     else:
         return 1
 
-
+@arcToolReport
 def evenStreetWidth(lanesCount, lnWidth, additionalWidth=0):
     if lanesCount % 2 == 0:
         stWidth = (lnWidth * lanesCount) + additionalWidth
@@ -172,13 +229,12 @@ def evenStreetWidth(lanesCount, lnWidth, additionalWidth=0):
         stWidth = ((lnWidth * lanesCount) + additionalWidth)
         return stWidth
 
-
+@arcToolReport
 def parkingWidth(string):
     if string == "Parallel":
         return 2.44
     else:
         return 0
-
 
 # Main Function
 

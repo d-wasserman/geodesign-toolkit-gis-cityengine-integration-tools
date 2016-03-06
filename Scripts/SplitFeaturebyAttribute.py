@@ -3,7 +3,7 @@
 # Purpose: Prepare a series of files from the prepare CEAssociations script or some custom geometry modification process
 # to be separate layers for CityEngine manipulation
 # Current Owner: David Wasserman
-# Last Modified: 1/18/2015
+# Last Modified: 3/5/2016
 # Copyright:   (c) Co-Adaptive- David Wasserman
 # ArcGIS Version:   10.3
 # Python Version:   2.7
@@ -36,12 +36,67 @@ compactWorkspace = arcpy.GetParameter(3)
 
 
 # Function Definitions
+def funcReport(function=None,reportBool=False):
+    """This decorator function is designed to be used as a wrapper with other functions to enable basic try and except
+     reporting (if function fails it will report the name of the function that failed and its arguments. If a report
+      boolean is true the function will report inputs and outputs of a function.-David Wasserman"""
+    def funcReport_Decorator(function):
+        def funcWrapper(*args, **kwargs):
+            try:
+                funcResult = function(*args, **kwargs)
+                if reportBool:
+                    print("Function:{0}".format(str(function.__name__)))
+                    print("     Input(s):{0}".format(str(args)))
+                    print("     Ouput(s):{0}".format(str(funcResult)))
+                return funcResult
+            except Exception as e:
+                print("{0} - function failed -|- Function arguments were:{1}.".format(str(function.__name__), str(args)))
+                print(e.args[0])
+        return funcWrapper
+    if not function:  # User passed in a bool argument
+        def waiting_for_function(function):
+            return funcReport_Decorator(function)
+        return waiting_for_function
+    else:
+        return funcReport_Decorator(function)
+
+
+def arcToolReport(function=None, arcToolMessageBool=False, arcProgressorBool=False):
+    """This decorator function is designed to be used as a wrapper with other GIS functions to enable basic try and except
+     reporting (if function fails it will report the name of the function that failed and its arguments. If a report
+      boolean is true the function will report inputs and outputs of a function.-David Wasserman"""
+    def arcToolReport_Decorator(function):
+        def funcWrapper(*args, **kwargs):
+            try:
+                funcResult = function(*args, **kwargs)
+                if arcToolMessageBool:
+                    arcpy.AddMessage("Function:{0}".format(str(function.__name__)))
+                    arcpy.AddMessage("     Input(s):{0}".format(str(args)))
+                    arcpy.AddMessage("     Ouput(s):{0}".format(str(funcResult)))
+                if arcProgressorBool:
+                    arcpy.SetProgressorLabel("Function:{0}".format(str(function.__name__)))
+                    arcpy.SetProgressorLabel("     Input(s):{0}".format(str(args)))
+                    arcpy.SetProgressorLabel("     Ouput(s):{0}".format(str(funcResult)))
+                return funcResult
+            except Exception as e:
+                arcpy.AddMessage(
+                    "{0} - function failed -|- Function arguments were:{1}.".format(str(function.__name__), str(args)))
+                print("{0} - function failed -|- Function arguments were:{1}.".format(str(function.__name__), str(args)))
+                print(e.args[0])
+        return funcWrapper
+    if not function:  # User passed in a bool argument
+        def waiting_for_function(function):
+            return  arcToolReport_Decorator(function)
+        return waiting_for_function
+    else:
+        return arcToolReport_Decorator(function)
+@arcToolReport
 def unique_values(table, field):
     # Get an iterable with unique values
     data = arcpy.da.TableToNumPyArray(table, [field])
     return numpy.unique(data[field])
 
-
+@arcToolReport
 def FieldExist(featureclass, fieldname):
     # Check if a field in a feature class field exists and return true it does, false if not.
     fieldList = arcpy.ListFields(featureclass, fieldname)
@@ -51,7 +106,7 @@ def FieldExist(featureclass, fieldname):
     else:
         return False
 
-
+@arcToolReport
 def AddNewField(in_table, field_name, field_type, field_precision="#", field_scale="#", field_length="#",
                 field_alias="#", field_is_nullable="#", field_is_required="#", field_domain="#"):
     # Add a new field if it currently does not exist...add field alone is slower than checking first.
@@ -66,9 +121,9 @@ def AddNewField(in_table, field_name, field_type, field_precision="#", field_sca
                                   field_alias,
                                   field_is_nullable, field_is_required, field_domain)
 
-
+@arcToolReport
 def arcPrint(string, progressor_Bool=False):
-    # This function is used to simplify using arcpy reporting for tool creation,if progressor bool is true it will
+    # This function is used to simplify using arcpy reporting for tool creation,if progressor bool is true it wll
     # create a tool label.
     try:
         if progressor_Bool:
@@ -85,13 +140,14 @@ def arcPrint(string, progressor_Bool=False):
         arcpy.AddMessage("Could not create message, bad arguments.")
         pass
 
-
+@arcToolReport
 def constructSQLEqualityQuery(fieldName, value, dataSource):
     # Creates a workspace sensitive equality query to be used in arcpy.
     return "{0} = '{1}'".format(arcpy.AddFieldDelimiters(dataSource, fieldName), str(value))
 
 
 # Main Function Definition
+@arcToolReport
 def do_analysis(inFeatureClass, outWorkSpace, explodeID, compactBool=True):
     # This tool will split a feature class into multiple feature classes based on a field
     try:

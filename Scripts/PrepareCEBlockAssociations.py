@@ -3,7 +3,7 @@
 # Purpose: This scripting tool is designed to prepare a feature class's records for CityEngine by associating it with
 # a geometry used to create CE Blocks with curb extension supporting geometry class.
 # Current Owner: David Wasserman
-# Last Modified: 12/23/2015
+# Last Modified: 3/5/2016
 # Copyright:   (c) Co-Adaptive- David Wasserman
 # ArcGIS Version:   10.3
 # Python Version:   2.7
@@ -31,9 +31,63 @@ outFeatureClass = arcpy.GetParameterAsText(1)
 StreetLength_LotArea = arcpy.GetParameter(2)  # Units of projection
 SizeField = arcpy.GetParameterAsText(3)  # CR: more descriptive
 BlockWidth = arcpy.GetParameter(4)
-
+referenceFeatureClassCentroid=arcpy.GetParameterAsText(5) #optional reference FC to get centroid from
 
 # Function Definitions
+def funcReport(function=None,reportBool=False):
+    """This decorator function is designed to be used as a wrapper with other functions to enable basic try and except
+     reporting (if function fails it will report the name of the function that failed and its arguments. If a report
+      boolean is true the function will report inputs and outputs of a function.-David Wasserman"""
+    def funcReport_Decorator(function):
+        def funcWrapper(*args, **kwargs):
+            try:
+                funcResult = function(*args, **kwargs)
+                if reportBool:
+                    print("Function:{0}".format(str(function.__name__)))
+                    print("     Input(s):{0}".format(str(args)))
+                    print("     Ouput(s):{0}".format(str(funcResult)))
+                return funcResult
+            except Exception as e:
+                print("{0} - function failed -|- Function arguments were:{1}.".format(str(function.__name__), str(args)))
+                print(e.args[0])
+        return funcWrapper
+    if not function:  # User passed in a bool argument
+        def waiting_for_function(function):
+            return funcReport_Decorator(function)
+        return waiting_for_function
+    else:
+        return funcReport_Decorator(function)
+
+
+def arcToolReport(function=None, arcToolMessageBool=False, arcProgressorBool=False):
+    """This decorator function is designed to be used as a wrapper with other GIS functions to enable basic try and except
+     reporting (if function fails it will report the name of the function that failed and its arguments. If a report
+      boolean is true the function will report inputs and outputs of a function.-David Wasserman"""
+    def arcToolReport_Decorator(function):
+        def funcWrapper(*args, **kwargs):
+            try:
+                funcResult = function(*args, **kwargs)
+                if arcToolMessageBool:
+                    arcpy.AddMessage("Function:{0}".format(str(function.__name__)))
+                    arcpy.AddMessage("     Input(s):{0}".format(str(args)))
+                    arcpy.AddMessage("     Ouput(s):{0}".format(str(funcResult)))
+                if arcProgressorBool:
+                    arcpy.SetProgressorLabel("Function:{0}".format(str(function.__name__)))
+                    arcpy.SetProgressorLabel("     Input(s):{0}".format(str(args)))
+                    arcpy.SetProgressorLabel("     Ouput(s):{0}".format(str(funcResult)))
+                return funcResult
+            except Exception as e:
+                arcpy.AddMessage(
+                    "{0} - function failed -|- Function arguments were:{1}.".format(str(function.__name__), str(args)))
+                print("{0} - function failed -|- Function arguments were:{1}.".format(str(function.__name__), str(args)))
+                print(e.args[0])
+        return funcWrapper
+    if not function:  # User passed in a bool argument
+        def waiting_for_function(function):
+            return  arcToolReport_Decorator(function)
+        return waiting_for_function
+    else:
+        return arcToolReport_Decorator(function)
 
 def getFIndex(field_names, field_name):
     try:  # Assumes string will match if all the field names are made lower case.
@@ -202,7 +256,7 @@ def lineLength(row, Field, constantLen, fNames):
 
 
 # Main Function
-def do_analysis(inFeatureClass, outFeatureClass, lengthNum, lengthField, blockWidthValue):
+def do_analysis(inFeatureClass, outFeatureClass, lengthNum, lengthField, blockWidthValue,referenceFeatureClass):
     # This function will execute the main tool, steps are 1. Make a copy 2. Make a centroid 3. Use point centroid of
     # FC within a cursor to construct new geometry 4. Project into Web Mercator 5. Delete intermediates
     try:
@@ -235,8 +289,13 @@ def do_analysis(inFeatureClass, outFeatureClass, lengthNum, lengthField, blockWi
                 "The shape type is {0}, and the current spatial reference is: {1}".format(str(shpType), str(srName)),
                 True)
         # Get mean center of feature class (for pointGeo)
-        arcPrint("Calculating the mean center of the copied feature.", True)
-        meanCenter = arcpy.MeanCenter_stats(inFeatureClass)
+        if arcpy.Exists(referenceFeatureClass) and referenceFeatureClass != "#":
+            arcPrint("Calculating the mean center of the reference feature class.", True)
+            meanCenter = arcpy.MeanCenter_stats(referenceFeatureClass)
+        else:
+            arcPrint("Calculating the mean center of the copied feature.", True)
+            meanCenter = arcpy.MeanCenter_stats(OutPut)
+
         fieldNames = getFields(inFeatureClass)
         arcPrint("Getting point geometry from copied center.", True)
         pointGeo = arcpy.da.SearchCursor(meanCenter, ["SHAPE@"]).next()[0]  # Only one center, so one record
@@ -292,4 +351,4 @@ def do_analysis(inFeatureClass, outFeatureClass, lengthNum, lengthField, blockWi
 
 
 # End do_analysis function
-do_analysis(inFeatureClass, outFeatureClass, StreetLength_LotArea, SizeField, BlockWidth)
+do_analysis(inFeatureClass, outFeatureClass, StreetLength_LotArea, SizeField, BlockWidth,referenceFeatureClassCentroid)

@@ -334,7 +334,7 @@
 </div>
 <h2 class="gp" xmlns="">Syntax</h2>
 <div xmlns="">
-<p style="margin-top: -1.2em">PrepareGeodataAssociations (Feature_Class, Output_Feature, {Distance}, {Distance_Field}) <br /><br />
+<p style="margin-top: -1.2em">PrepareGeodataAssociations (Feature_Class, Output_Feature, {Distance}, {Distance_Field}, {Reference_Feature_Class}) <br /><br />
 </p>
 <table width="100%" border="0" cellpadding="5">
 <tbody>
@@ -376,6 +376,13 @@
 <span style="font-weight: bold">Dialog Reference</span><br /><DIV STYLE="text-align:Left;"><DIV><DIV><P><SPAN>If you want to reference a distance field (like Shape_Area or Shape_Length), that is in the units the same as the current projection, you can select a field here to use. </SPAN></P></DIV></DIV></DIV><div class="noContent" style="text-align:center; margin-top: -1em">___________________</div><br />
 <span style="font-weight: bold">Python Reference</span><br /><DIV STYLE="text-align:Left;"><DIV><DIV><P><SPAN>The tool uses the units of the current projection for node translations. Distances might not be entirely accurate due to changes in projection or based on various calculations. </SPAN></P></DIV></DIV></DIV></td>
 <td class="info" align="left">Field</td>
+</tr>
+<tr>
+<td class="info">Reference_Feature_Class (Optional) </td>
+<td class="info" align="left">
+<span style="font-weight: bold">Dialog Reference</span><br /><DIV STYLE="text-align:Left;"><DIV><P><SPAN>This is a feature class that is used to create a mean center point that is used to create the CityEngine prepared geometries. Helps for cross scenario comparisions for different feature classes. </SPAN></P></DIV></DIV><div class="noContent" style="text-align:center; margin-top: -1em">___________________</div><br />
+<span style="font-weight: bold">Python Reference</span><br /><DIV STYLE="text-align:Left;"><DIV><P><SPAN>Checks if the optional feature class exists then, then uses that feature class if it is passed to create the meanCenter. </SPAN></P></DIV></DIV></td>
+<td class="info" align="left">Feature Layer</td>
 </tr>
 </tbody>
 </table>

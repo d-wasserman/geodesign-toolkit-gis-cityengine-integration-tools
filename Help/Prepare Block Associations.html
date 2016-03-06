@@ -330,11 +330,11 @@
 </div>
 <h2 class="gp" xmlns="">Usage</h2>
 <div class="gpItemInfo" xmlns="">
-<p><DIV STYLE="text-align:Left;"><DIV><DIV><P><SPAN>Use this tool to create an output feature class that has simplified geometry design for the purpose of CityEngine import.  This particular tool will be used to create block geometries to help with land use and transportation coordination scenarios. </SPAN></P></DIV></DIV></DIV></p><br />
+<p><DIV STYLE="text-align:Left;"><DIV><DIV><P><SPAN>Use this tool to create an output feature class that has simplified geometry design for the purpose of CityEngine import. This particular tool will be used to create block geometries to help with land use and transportation coordination scenarios. </SPAN></P></DIV></DIV></DIV></p><br />
 </div>
 <h2 class="gp" xmlns="">Syntax</h2>
 <div xmlns="">
-<p style="margin-top: -1.2em">PrepareBlockAssociations (Feature_Class, Output_Feature, {Distance}, {Distance_Field}, Block_Width) <br /><br />
+<p style="margin-top: -1.2em">PrepareBlockAssociations (Feature_Class, Output_Feature, {Distance}, {Distance_Field}, Block_Width, {Reference_Feature_Class}) <br /><br />
 </p>
 <table width="100%" border="0" cellpadding="5">
 <tbody>
@@ -383,6 +383,13 @@
 <span style="font-weight: bold">Dialog Reference</span><br /><DIV STYLE="text-align:Left;"><DIV><P><SPAN>This is a constant value in the current units of the used projection that is used to determine the width of the blocks created by this tool. The larger this value the longer the side streets connecting to the blocks. Be sure to check that all new segments that are not a "Main Street" have a zero street and sidewalk width.</SPAN></P></DIV></DIV><div class="noContent" style="text-align:center; margin-top: -1em">___________________</div><br />
 <span style="font-weight: bold">Python Reference</span><br /><DIV STYLE="text-align:Left;"><DIV><P><SPAN>A geometry dictionary is created based on the input block width value that is then unloaded to create the feature blocks. </SPAN></P></DIV></DIV></td>
 <td class="info" align="left">Double</td>
+</tr>
+<tr>
+<td class="info">Reference_Feature_Class (Optional) </td>
+<td class="info" align="left">
+<span style="font-weight: bold">Dialog Reference</span><br /><DIV STYLE="text-align:Left;"><DIV><P><SPAN>This is a feature class that is used to create a mean center point that is used to create the CityEngine prepared geometries. Helps for cross scenario comparisions for different feature classes.</SPAN></P></DIV></DIV><div class="noContent" style="text-align:center; margin-top: -1em">___________________</div><br />
+<span style="font-weight: bold">Python Reference</span><br /><DIV STYLE="text-align:Left;"><DIV><P><SPAN>Checks if the optional feature class exists then, then uses that feature class if it is passed to create the meanCenter.</SPAN></P></DIV></DIV></td>
+<td class="info" align="left">Feature Layer</td>
 </tr>
 </tbody>
 </table>
