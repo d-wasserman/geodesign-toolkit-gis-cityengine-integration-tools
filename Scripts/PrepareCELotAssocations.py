@@ -23,7 +23,7 @@
 # limitations under the License.
 # --------------------------------
 # Import Modules
-import os, sys, arcpy, math
+import os, sys, arcpy, math,copy
 
 # Define Inputs
 inFeatureClass = arcpy.GetParameterAsText(0)
@@ -104,7 +104,8 @@ def arcPrint(string, progressor_Bool=False):
         arcpy.GetMessages(2)
         pass
     except:
-        arcpy.AddMessage("Could not create message, bad arguments.")
+        print("Could not create message, bad arguments.")
+        pass
 
 @arcToolReport
 def FieldExist(featureclass, fieldname):
@@ -211,10 +212,11 @@ def do_analysis(inFeatureClass, outFeatureClass, Area, Field,referenceFeatureCla
             meanCenter = arcpy.MeanCenter_stats(referenceFeatureClass)
         else:
             arcPrint("Calculating the mean center of the copied feature.", True)
-            meanCenter = arcpy.MeanCenter_stats(OutPut)
+            meanCenter = arcpy.MeanCenter_stats(inFeatureClass)
 
         arcPrint("Getting point geometry from copied center.", True)
-        pointGeo = arcpy.da.SearchCursor(meanCenter, ["SHAPE@"]).next()[0]  # Only one center, so one record
+        pointGeo = copy.deepcopy( arcpy.da.SearchCursor(meanCenter, ["SHAPE@"]).next()[0])  # Only one center, so one record
+
 
         # Check if the optional Street Length/ Lot Area field is used.
         if Field and Field != "#":
@@ -249,10 +251,12 @@ def do_analysis(inFeatureClass, outFeatureClass, Area, Field,referenceFeatureCla
             arcpy.Delete_management(OutPut)
             del SpatialRef, desc, cursor, webMercatorAux
     except arcpy.ExecuteError:
-        print arcpy.GetMessages(2)
+        print(arcpy.GetMessages(2))
     except Exception as e:
-        print e.args[0]
+        print(e.args[0])
 
 
 # End do_analysis function
-do_analysis(inFeatureClass, outFeatureClass, StreetLength_LotArea, SizeField,referenceFeatureClassCentroid)
+# Main Script
+if __name__ == "__main__":
+    do_analysis(inFeatureClass, outFeatureClass, StreetLength_LotArea, SizeField,referenceFeatureClassCentroid)

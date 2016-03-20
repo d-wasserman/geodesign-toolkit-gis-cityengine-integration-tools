@@ -60,10 +60,10 @@ def main(outputFolder):
             if deleteBoolean:
                 ce.delete(ce.selection())
                 pass
-            print "Exported web scene for layer named:" + str(layerName)
+            print("Exported web scene for layer named:" + str(layerName))
             # Change this to an absolute path that points to your KML files.
         except:
-            print "Could not execute on counter " + str(counter)
+            print("Could not execute on counter " + str(counter))
             counter += 1
             pass
 

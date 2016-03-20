@@ -67,7 +67,7 @@ def main():
             layerView = ce.getObjectsFrom(ce.get3DViews(), ce.isViewport)
             if len(layerView) < 1:
                 counter += 1
-                print "No Views found on object number " + str(counter)
+                print("No Views found on object number " + str(counter))
             else:
                 ce.waitForUIIdle()
                 ce.setSelection(layer)
@@ -77,7 +77,7 @@ def main():
                     ce.waitForUIIdle()
                 layerView[0].snapshot(ce.toFSPath("images") + outputFolder + str(layerName) + fileType, width, height)
                 counter += 1
-                print "Exported snapshot for layer named:" + str(layerName)
+                print("Exported snapshot for layer named:" + str(layerName))
 
             layer.setVisible(False)
             # After Snap Shots are retrieved delete the selection, memory management
@@ -85,7 +85,7 @@ def main():
                 ce.delete(ce.selection())
                 pass
         except:
-            print "Could not execute on counter " + str(counter)
+            print("Could not execute on counter " + str(counter))
             counter += 1
             pass
             # Change this to an absolute path that points to your KML files.

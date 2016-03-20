@@ -3,7 +3,7 @@
 # Purpose: Prepare a series of files from the prepare CEAssociations script or some custom geometry modification process
 # to be separate layers for CityEngine manipulation
 # Current Owner: David Wasserman
-# Last Modified: 3/5/2016
+# Last Modified: 3/15/2016
 # Copyright:   (c) Co-Adaptive- David Wasserman
 # ArcGIS Version:   10.3
 # Python Version:   2.7
@@ -137,7 +137,7 @@ def arcPrint(string, progressor_Bool=False):
         arcpy.GetMessages(2)
         pass
     except:
-        arcpy.AddMessage("Could not create message, bad arguments.")
+        print("Could not create message, bad arguments.")
         pass
 
 @arcToolReport
@@ -193,9 +193,10 @@ def do_analysis(inFeatureClass, outWorkSpace, explodeID, compactBool=True):
             arcpy.AddWarning("The desired workspace does not exist.")
 
     except arcpy.ExecuteError:
-        print arcpy.GetMessages(2)
+        print(arcpy.GetMessages(2))
     except Exception as e:
-        print e.args[0]
+        print(e.args[0])
 
-
-do_analysis(inFeatureClass, outWorkSpace, uniqueField, compactWorkspace)
+# Main Script
+if __name__ == "__main__":
+    do_analysis(inFeatureClass, outWorkSpace, uniqueField, compactWorkspace)

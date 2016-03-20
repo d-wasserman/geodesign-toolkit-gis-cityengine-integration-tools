@@ -128,7 +128,8 @@ def arcPrint(string, progressor_Bool=False):
     except arcpy.ExecuteError:
         arcpy.GetMessages(2)
     except:
-        arcpy.AddMessage("Could not create message, bad arguments.")
+        print("Could not create message, bad arguments.")
+        pass
 
 
 def FieldExist(featureclass, fieldname):
@@ -248,10 +249,10 @@ def copyAlteredRow(row, fieldList, replacementDict):
 def lineLength(row, Field, constantLen, fNames):
     # returns the appropriate value type  based on the options selected: retrieved form field or uses a constant
     if Field and Field != "#":
-        arcPrint("Using size field to create output geometries.", True)
+        print("Using size field to create output geometries.")
         return abs(row[getFIndex(fNames, Field)])
     else:
-        arcPrint("Using size input value to create same sized output geometries.", True)
+        print("Using size input value to create same sized output geometries.")
         return abs(constantLen)
 
 
@@ -294,21 +295,26 @@ def do_analysis(inFeatureClass, outFeatureClass, lengthNum, lengthField, blockWi
             meanCenter = arcpy.MeanCenter_stats(referenceFeatureClass)
         else:
             arcPrint("Calculating the mean center of the copied feature.", True)
-            meanCenter = arcpy.MeanCenter_stats(OutPut)
+            meanCenter = arcpy.MeanCenter_stats(inFeatureClass)
+
 
         fieldNames = getFields(inFeatureClass)
         arcPrint("Getting point geometry from copied center.", True)
-        pointGeo = arcpy.da.SearchCursor(meanCenter, ["SHAPE@"]).next()[0]  # Only one center, so one record
+        pointGeo = copy.deepcopy( arcpy.da.SearchCursor(meanCenter, ["SHAPE@"]).next()[0])  # Only one center, so one recor
+
         # Check if the optional Street Length/ Lot Area field is used.
         idsAndFieldSearchNames = ["SHAPE@"] + fieldNames
-
-        cursor = arcpy.da.SearchCursor(inFeatureClass, idsAndFieldSearchNames)
         arcPrint("The search cursor's fields and tags are:{0}".format(str(idsAndFieldSearchNames)), True)
+        records = []
+        with arcpy.da.SearchCursor(inFeatureClass, idsAndFieldSearchNames) as cursorSearch:
+            arcPrint("Loading input feature classes rows into a new record list.",True)
+            for search_row in cursorSearch:
+                records.append(search_row)
         arcPrint("Inserting new rows and geometries to new feature class.", True)
         count = 0
         with arcpy.da.InsertCursor(tempOutFeature, idsAndFieldSearchNames) as cursorInsert:
             if desc.shapeType == "Polyline":
-                for row in cursor:
+                for row in records:
                     # Use two try statements, one time to try to catch the error
                     count += 1
                     try:
@@ -327,8 +333,8 @@ def do_analysis(inFeatureClass, outFeatureClass, lengthNum, lengthField, blockWi
                             except:
                                 handleFailedStreetUpdate(cursorInsert, row, idsAndFieldSearchNames, geoDict, key, count)
                     except:
-                        arcPrint("Failed on iteration {0}.".format(str(count)), True)
                         arcpy.GetMessage(2)
+                        arcPrint("Failed on iteration {0}.".format(str(count)), True)
                         pass
             else:
                 arcPrint("Input geometry is not a polyline. Check arguments.", True)
@@ -342,13 +348,16 @@ def do_analysis(inFeatureClass, outFeatureClass, lengthNum, lengthField, blockWi
         arcpy.Delete_management(OutPut)
         arcpy.DeleteField_management(inFeatureClass, OldObjectIDName)
         arcpy.DeleteField_management(inFeatureClass, GeometryName)
-        del SpatialRef, desc, cursor, webMercatorAux
+        del SpatialRef, desc, cursorSearch, webMercatorAux,cursorInsert
 
     except arcpy.ExecuteError:
-        print arcpy.GetMessages(2)
+        print(arcpy.GetMessages(2))
     except Exception as e:
-        print e.args[0]
+        print(e.args[0])
 
 
 # End do_analysis function
-do_analysis(inFeatureClass, outFeatureClass, StreetLength_LotArea, SizeField, BlockWidth,referenceFeatureClassCentroid)
+# Main Script
+if __name__ == "__main__":
+    do_analysis(inFeatureClass, outFeatureClass, StreetLength_LotArea, SizeField, BlockWidth,referenceFeatureClassCentroid)
+

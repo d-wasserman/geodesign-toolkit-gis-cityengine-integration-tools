@@ -3,7 +3,7 @@
 # Purpose: This tool is designed to populate with default fields and values for street shapes and is designed
 # to add core complete street rule fields. 
 # Current Owner: David Wasserman
-# Last Modified: 3/5/2016
+# Last Modified: 3/15/2016
 # Copyright:  (c) Co-Adaptive- David Wasserman
 # ArcGIS Version:   10.3
 # Python Version:   2.7
@@ -463,10 +463,13 @@ def do_analysis(inFeatureClass, CompStAttr, DefaultStParam, RandomCompStr):
             del cursor
 
     except arcpy.ExecuteError:
-        print arcpy.GetMessages(2)
+        print(arcpy.GetMessages(2))
     except Exception as e:
-        print e.args[0]
+        print(e.args[0])
 
 
 # End do_analysis function
-do_analysis(inFeatureClass, AddCompleteStreetRuleAttributes, CreateDefaultStreetParameters, CreateRandomCompStAttr)
+# Main Script
+if __name__ == "__main__":
+    do_analysis(inFeatureClass, AddCompleteStreetRuleAttributes, CreateDefaultStreetParameters, CreateRandomCompStAttr)
+
