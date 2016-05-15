@@ -3,7 +3,7 @@
 # Purpose: This scripting tool is designed to prepare a feature class's records for CityEngine by associating it with
 # an optional target geometry or a default geometry based around the centroid of the input feature class.
 # Current Owner: David Wasserman
-# Last Modified: 3/5/2016
+# Last Modified: 5/15/2016
 # Copyright:   (c) Co-Adaptive- David Wasserman
 # ArcGIS Version:   10.3
 # Python Version:   2.7
@@ -107,6 +107,17 @@ def arcPrint(string, progressor_Bool=False):
         print("Could not create message, bad arguments.")
         pass
 
+
+def getFIndex(field_names, field_name):
+    """Will get the index for a  arcpy da.cursor based on a list of field names as an input.
+    Assumes string will match if all the field names are made lower case."""
+    try:
+        return [str(i).lower() for i in field_names].index(str(field_name).lower())
+        # Make iter items lower case to get right time field index.
+    except:
+        print("Couldn't retrieve index for {0}, check arguments.".format(str(field_name)))
+        return None
+
 @arcToolReport
 def FieldExist(featureclass, fieldname):
     # Check if a field in a feature class field exists and return true it does, false if not.
@@ -160,9 +171,8 @@ def CreateLotCEGeometry(pointObj, translationDistance):
 
 @arcToolReport
 def handleFailedLotUpdate(cursor, row, pointGeo, Length):
-    # TODO: This is a hack, why the error occurs will be addressed in future iterations
-    # If at first you don't succeed, TRY and TRY again...This function literally tries the same update row,
-    # and if the second attempt fails...it just deletes the row.
+    """To deal with update cursor instability/script errors, this function will try update the row update
+    a second time. If it fails, it will delete the row in question. """
     try:
         row[0] = CreateLotCEGeometry(pointGeo, abs(Length))
         cursor.updateRow(row)
@@ -175,10 +185,11 @@ def handleFailedLotUpdate(cursor, row, pointGeo, Length):
         cursor.deleteRow()
 
 @arcToolReport
-def lotArea(row, Field, constantArea, rowIndex):
-    # returns the appropriate length type  based on the options selected: retrieved form field or uses a constant
-    if Field and Field != "#":
-        return abs(row[rowIndex])
+def lotArea(row, Field, constantArea, fNames):
+    """Returns the appropriate area type  based on the options selected:
+     retrieved form field or uses a constant"""
+    if Field and getFIndex(fNames,str(Field)):
+        return abs(row[getFIndex(fNames, Field)])
     else:
         return abs(constantArea)
 
@@ -186,8 +197,8 @@ def lotArea(row, Field, constantArea, rowIndex):
 # Main Function
 @arcToolReport
 def do_analysis(inFeatureClass, outFeatureClass, Area, Field,referenceFeatureClass):
-    # This function will execute the main tool, steps are 1. Make a copy 2. Make a centroid 3. Use point centroid of
-    # FC within a cursor to construct new geometry 4. Project into Web Mercator 5. Delete intermediates
+    """This function will create lots in one location based on the incoming reference centroid for the
+    purpose of being used for data driven design applications in CityEngine."""
     try:
         # Delete Existing Output
         arcpy.env.overwriteOutput = True
@@ -219,7 +230,7 @@ def do_analysis(inFeatureClass, outFeatureClass, Area, Field,referenceFeatureCla
 
 
         # Check if the optional Street Length/ Lot Area field is used.
-        if Field and Field != "#":
+        if Field and FieldExist(OutPut,Field):
             arcPrint("Using size field to create output geometries.", True)
             cursorFields = ["SHAPE@", "OID@", Field]
         else:
@@ -234,11 +245,11 @@ def do_analysis(inFeatureClass, outFeatureClass, Area, Field,referenceFeatureCla
                     count += 1
                     try:
                         print("A Polygon at OID: {0}.".format(str(row[1])))
-                        row[0] = CreateLotCEGeometry(pointGeo, math.sqrt(lotArea(row, Field, Area, 2)))
+                        row[0] = CreateLotCEGeometry(pointGeo, math.sqrt(lotArea(row, Field, Area, cursorFields)))
                         cursor.updateRow(row)
 
                     except:
-                        handleFailedLotUpdate(cursor, row, pointGeo, math.sqrt(lotArea(row, Field, Area, 2)))
+                        handleFailedLotUpdate(cursor, row, pointGeo, math.sqrt(lotArea(row, Field, Area, cursorFields)))
             else:
                 arcPrint("Input geometry is not a polygon. Check arguments.")
                 arcpy.AddError("Input geometry is not a polygon. Check arguments.")

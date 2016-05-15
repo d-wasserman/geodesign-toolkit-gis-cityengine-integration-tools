@@ -3,7 +3,7 @@
 # Purpose: This scripting tool is designed to prepare a feature class's records for CityEngine by associating it with
 # an optional target geometry or a default geometry based around the centroid of the input feature class.
 # Current Owner: David Wasserman
-# Last Modified: 3/5/2016
+# Last Modified: 5/15/2016
 # Copyright:   (c) Co-Adaptive- David Wasserman
 # ArcGIS Version:   10.3
 # Python Version:   2.7
@@ -30,13 +30,15 @@ inFeatureClass = arcpy.GetParameterAsText(0)
 outFeatureClass = arcpy.GetParameterAsText(1)
 StreetLength_LotArea = arcpy.GetParameter(2)  # Units of current feature class
 SizeField = arcpy.GetParameterAsText(3)  # Field is used to get size of output sanitized geometries.
-referenceFeatureClassCentroid=arcpy.GetParameterAsText(4) #optional reference FC to get centroid from
+referenceFeatureClassCentroid = arcpy.GetParameterAsText(4)  # optional reference FC to get centroid from
+
 
 # Function Definitions
-def funcReport(function=None,reportBool=False):
+def funcReport(function=None, reportBool=False):
     """This decorator function is designed to be used as a wrapper with other functions to enable basic try and except
      reporting (if function fails it will report the name of the function that failed and its arguments. If a report
       boolean is true the function will report inputs and outputs of a function.-David Wasserman"""
+
     def funcReport_Decorator(function):
         def funcWrapper(*args, **kwargs):
             try:
@@ -47,12 +49,16 @@ def funcReport(function=None,reportBool=False):
                     print("     Ouput(s):{0}".format(str(funcResult)))
                 return funcResult
             except Exception as e:
-                print("{0} - function failed -|- Function arguments were:{1}.".format(str(function.__name__), str(args)))
+                print(
+                "{0} - function failed -|- Function arguments were:{1}.".format(str(function.__name__), str(args)))
                 print(e.args[0])
+
         return funcWrapper
+
     if not function:  # User passed in a bool argument
         def waiting_for_function(function):
             return funcReport_Decorator(function)
+
         return waiting_for_function
     else:
         return funcReport_Decorator(function)
@@ -62,6 +68,7 @@ def arcToolReport(function=None, arcToolMessageBool=False, arcProgressorBool=Fal
     """This decorator function is designed to be used as a wrapper with other GIS functions to enable basic try and except
      reporting (if function fails it will report the name of the function that failed and its arguments. If a report
       boolean is true the function will report inputs and outputs of a function.-David Wasserman"""
+
     def arcToolReport_Decorator(function):
         def funcWrapper(*args, **kwargs):
             try:
@@ -77,16 +84,22 @@ def arcToolReport(function=None, arcToolMessageBool=False, arcProgressorBool=Fal
                 return funcResult
             except Exception as e:
                 arcpy.AddMessage(
-                    "{0} - function failed -|- Function arguments were:{1}.".format(str(function.__name__), str(args)))
-                print("{0} - function failed -|- Function arguments were:{1}.".format(str(function.__name__), str(args)))
+                        "{0} - function failed -|- Function arguments were:{1}.".format(str(function.__name__),
+                                                                                        str(args)))
+                print(
+                "{0} - function failed -|- Function arguments were:{1}.".format(str(function.__name__), str(args)))
                 print(e.args[0])
+
         return funcWrapper
+
     if not function:  # User passed in a bool argument
         def waiting_for_function(function):
-            return  arcToolReport_Decorator(function)
+            return arcToolReport_Decorator(function)
+
         return waiting_for_function
     else:
         return arcToolReport_Decorator(function)
+
 
 @arcToolReport
 def arcPrint(string, progressor_Bool=False):
@@ -105,6 +118,18 @@ def arcPrint(string, progressor_Bool=False):
     except:
         print("Could not create message, bad arguments.")
         pass
+
+
+def getFIndex(field_names, field_name):
+    """Will get the index for a  arcpy da.cursor based on a list of field names as an input.
+    Assumes string will match if all the field names are made lower case."""
+    try:
+        return [str(i).lower() for i in field_names].index(str(field_name).lower())
+        # Make iter items lower case to get right time field index.
+    except:
+        print("Couldn't retrieve index for {0}, check arguments.".format(str(field_name)))
+        return None
+
 
 @arcToolReport
 def FieldExist(featureclass, fieldname):
@@ -133,6 +158,7 @@ def AddNewField(in_table, field_name, field_type, field_precision="#", field_sca
                                   field_alias,
                                   field_is_nullable, field_is_required, field_domain)
 
+
 @arcToolReport
 def CreateMainStreetCEGeometry(pointObj, translationDistance, nodalShift=0):
     # Create a polyline object consisting of a simple line based on the location of a passed point
@@ -151,9 +177,9 @@ def CreateMainStreetCEGeometry(pointObj, translationDistance, nodalShift=0):
 # TODO: Integrate block generation into tool. Not a priority.
 @arcToolReport
 def CreateMainStreetBlockCEGeometry(pointObj, translationDistance, sideBlockWidth=50):
-    # Create a dictionary of polyline objects consisting of a simple line based on the location of a passed point
-    # This function in the future will be used to create a center street with two side blocks for the purpose
-    # of lot creation in CityEngine.
+    """ Create a dictionary of polyline objects consisting of a simple line based on the location of a passed point
+     This function in the future will be used to create a center street with two side blocks for the purpose
+     of lot creation in CityEngine."""
     firstPt = pointObj.getPart(0)
     secondPt = pointObj.getPart(0)
     secondPt.Y += translationDistance
@@ -199,11 +225,11 @@ def CreateMainStreetBlockCEGeometry(pointObj, translationDistance, sideBlockWidt
             "BottomLeftSideSt": botLeftSideStreet, "BottomRightSideSt": botRightSideStreet,
             "TopLeftSideSt": topLeftSideStreet, "TopRightSideSt": topRightSideStreet}
 
+
 @arcToolReport
 def handleFailedStreetUpdate(cursor, row, pointGeo, Length):
-    # TODO: This is a hack, why the error occurs will be addressed in future iterations
-    # If at first you don't succeed, TRY and TRY again...This function literally tries the same update row,
-    # and if the second attempt fails...it just deletes the row.
+    """To deal with update cursor instability/script errors, this function will try update the row update
+    a second time. If it fails, it will delete the row in question. """
     try:
         row[0] = CreateMainStreetCEGeometry(pointGeo, abs(Length))
         cursor.updateRow(row)
@@ -214,20 +240,22 @@ def handleFailedStreetUpdate(cursor, row, pointGeo, Length):
         arcpy.AddWarning("Passed and deleted line at OID {0}.".format(str(row[1])))
         cursor.deleteRow()
 
+
 @arcToolReport
-def lineLength(row, Field, constantLen, rowIndex):
-    # returns the appropriate length type  based on the options selected: retrieved form field or uses a constant
-    if Field and Field != "#":
-        return abs(row[rowIndex])
+def lineLength(row, Field, constantLen, fNames):
+    """Returns the appropriate value type  based on the options selected:
+    retrieved form field or uses a constant"""
+    if Field and getFIndex(fNames, str(Field)):
+        return abs(row[getFIndex(fNames, Field)])
     else:
         return abs(constantLen)
 
 
 # Main Function
 @arcToolReport
-def do_analysis(inFeatureClass, outFeatureClass, Length, Field,referenceFeatureClass):
-    # This function will execute the main tool, steps are 1. Make a copy 2. Make a centroid 3. Use point centroid of
-    # FC within a cursor to construct new geometry 4. Project into Web Mercator 5. Delete intermediates
+def do_analysis(inFeatureClass, outFeatureClass, Length, Field, referenceFeatureClass):
+    """This function will create streets in one location based on the incoming reference centroid for the
+    purpose of being used for data driven design applications in CityEngine."""
     try:
         # Delete Existing Output
         arcpy.env.overwriteOutput = True
@@ -255,9 +283,10 @@ def do_analysis(inFeatureClass, outFeatureClass, Length, Field,referenceFeatureC
             meanCenter = arcpy.MeanCenter_stats(inFeatureClass)
 
         arcPrint("Getting point geometry from copied center.", True)
-        pointGeo = copy.deepcopy( arcpy.da.SearchCursor(meanCenter, ["SHAPE@"]).next()[0])  # Only one center, so one record
+        pointGeo = copy.deepcopy(
+                arcpy.da.SearchCursor(meanCenter, ["SHAPE@"]).next()[0])  # Only one center, so one record
         # Check if the optional Street Length/ Lot Area field is used.
-        if Field and Field != "#":
+        if Field and FieldExist(OutPut, Field):
             arcPrint("Using size field to create output geometries.", True)
             cursorFields = ["SHAPE@", "OID@", Field]
         else:
@@ -273,10 +302,10 @@ def do_analysis(inFeatureClass, outFeatureClass, Length, Field,referenceFeatureC
                     count += 1
                     try:
                         print("A Line at OID: {0}.".format(str(row[1])))
-                        row[0] = CreateMainStreetCEGeometry(pointGeo, lineLength(row, Field, Length, 2))
+                        row[0] = CreateMainStreetCEGeometry(pointGeo, lineLength(row, Field, Length, cursorFields))
                         cursor.updateRow(row)
                     except:
-                        handleFailedStreetUpdate(cursor, row, pointGeo, lineLength(row, Field, Length, 2))
+                        handleFailedStreetUpdate(cursor, row, pointGeo, lineLength(row, Field, Length, cursorFields))
             else:
                 arcPrint("Input geometry is not a polyline. Check arguments.", True)
                 arcpy.AddError("Input geometry is not a polyline. Check arguments.")
@@ -298,4 +327,4 @@ def do_analysis(inFeatureClass, outFeatureClass, Length, Field,referenceFeatureC
 # End do_analysis function
 # Main Script
 if __name__ == "__main__":
-    do_analysis(inFeatureClass, outFeatureClass, StreetLength_LotArea, SizeField,referenceFeatureClassCentroid)
+    do_analysis(inFeatureClass, outFeatureClass, StreetLength_LotArea, SizeField, referenceFeatureClassCentroid)
