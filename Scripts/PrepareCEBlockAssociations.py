@@ -226,6 +226,8 @@ def CreateMainStreetBlockCEGeometry(pointObj, translationDistance, sideBlockWidt
 
 
 def copyAlteredRow(row, fieldList, replacementDict):
+    """Copy a row from a cursor based on a past list of fields in field list. If replacement dictionary has a key,
+    replace the row value copied with the replacement."""
     try:
         newRow = []
         keyList = replacementDict.keys()
