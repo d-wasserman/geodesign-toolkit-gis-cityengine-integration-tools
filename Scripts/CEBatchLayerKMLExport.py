@@ -51,9 +51,11 @@ def main():
                 ce.generateModels(ce.selection())
                 ce.waitForUIIdle()
             print ("Setting export settings for layer named: " + str(layerName))
-            exportSettings = CEWebSceneExportModelSettings()
+            exportSettings = KMLExportModelSettings()
             exportSettings.setOutputPath(ce.toFSPath("models") + str(outputFolder))
             exportSettings.setBaseName(layerName)
+            exportSettings.setCompression(False)
+            exportSettings.setTerrainLayers(exportSettings.TERRAIN_NONE)
             ce.export(ce.selection()[0], exportSettings)
             print ("Exported layer named: " + str(layerName) + "to models/BatchExport3WS")
             counter += 1

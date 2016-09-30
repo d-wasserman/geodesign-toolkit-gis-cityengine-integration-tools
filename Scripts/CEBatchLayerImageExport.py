@@ -44,7 +44,7 @@ def turnLayersInvisible(layersList):
     for layer in layersList:
         layer.setVisible(False)
 
-
+#@noUIupdate
 def main():
     # This function will export in batch images to the input outputFolder suggested resolution and file type can also be
     # declared.
