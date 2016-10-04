@@ -133,10 +133,10 @@ def getFIndex(field_names, field_name):
 
 @arcToolReport
 def FieldExist(featureclass, fieldname):
-    # Check if a field in a feature class field exists and return true it does, false if not.
+    """ Check if a field in a feature class field exists and return true it does, false if not."""
     fieldList = arcpy.ListFields(featureclass, fieldname)
     fieldCount = len(fieldList)
-    if (fieldCount >= 1):  # If there is one or more of this field return true
+    if (fieldCount >= 1) and fieldname.strip():  # If there is one or more of this field return true
         return True
     else:
         return False
