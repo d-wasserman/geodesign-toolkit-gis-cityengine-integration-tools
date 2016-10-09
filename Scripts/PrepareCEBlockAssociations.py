@@ -114,17 +114,26 @@ def getFIndex(field_names, field_name):
 
 
 def getFields(featureClass, excludedTolkens=["OID", "Geometry"], excludedFields=["shape_area", "shape_length"]):
+    """Get all field names from an incoming feature class defaulting to excluding tolkens and shape area & length.
+    Inputs: Feature class, excluding tokens list, excluded fields list.
+    Outputs: List of field names from input feature class. """
     try:
-        fcName = os.path.split(featureClass)[1]
+        try: # If  A feature Class split to game name
+            fcName = os.path.split(featureClass)[1]
+        except: # If a Feature Layer, just print the Layer Name
+            fcName = featureClass
         field_list = [f.name for f in arcpy.ListFields(featureClass) if f.type not in excludedTolkens
                       and f.name.lower() not in excludedFields]
         arcPrint("The field list for {0} is:{1}".format(str(fcName), str(field_list)), True)
         return field_list
     except:
-        arcPrint("Could not get fields for the following input {0}, returned an empty list.".format(str(featureClass)),
-                 True)
+        arcPrint(
+                "Could not get fields for the following input {0}, returned an empty list.".format(
+                        str(featureClass)),
+                True)
         arcpy.AddWarning(
-                "Could not get fields for the following input {0}, returned an empty list.".format(str(featureClass)))
+                "Could not get fields for the following input {0}, returned an empty list.".format(
+                        str(featureClass)))
         field_list = []
         return field_list
 
