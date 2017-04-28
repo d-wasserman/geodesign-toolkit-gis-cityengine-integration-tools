@@ -7,7 +7,7 @@ Intent:
 However, the idea behind these tools is to make context be provided by associating content to an individual entity either being displayed  within a web map or as part of cut sheets associated with the entity. So the context is provided by your application, and the selected records (streets/lots/buildings) are enabled to show pop ups or hyperlinks that go to their associated content. In some contexts, this leads to massive time savings, and enables a larger scale to work with. The reasons why this might be preferable include 1) web maps allow you to efficiently share large sets of data by compartmentalizing 3D content to only be shared when it is inspected in the web map (similar in concept to tiling GIS data) and 2) there is not as much time dedicated to preparing and gathering information that supports sharing 3D urban scenes thus enabling more time to focus on analysis or the story your application is trying to tell. Generally, the main idea is using CityEngine for what it is really good at: creating content, unimaginable quantities of content.
 ![alt text](https://geonet.esri.com/servlet/JiveServlet/downloadImage/102-7343-28-166685/output_Gdh5ev.gif "Output Example")
 
-#Tool Breakdown:
+# Tool Breakdown:
      The 6 python scripts within the CityEngine Tool Kit are broken down by software to be used with:
 ArcGIS
 PrepareCEStreetAssociations.py: This tool is designed to create a standard geometry to be imported by CityEngine and then used to drive rules as part of a geodesign methodology to create data driven street models.
@@ -21,7 +21,7 @@ PopulateStreetParameters.py: This tool takes a feature class and adds street par
 SplitFeaturebyAttribute.py: This script is designed to take a field and use its unique values to explode a feature class into multiple feature classes within a selected workspace. (Useful for applications outside of this one, inspired by the USGS script here).
 
 
-#CityEngine
+# CityEngine
 
 CEBatchWebSceneExport.py: Batch export of web scenes of individual CityEngine Layers to create consumable content. Example at this link.
 
@@ -31,7 +31,7 @@ CESelectLayerByAttribute.py: Select layers in CE Scene based on an attribute wit
 
 For more information about the tools read the help documents within the "Help" directory.
  
-#Limitations:
+# Limitations:
 
 Cross sectional data for street centerline files is very rare, and generally the databases to support this do not really exist. However, it is expected that as time progresses, more and more transportation asset information will be digitized.
 
