@@ -62,8 +62,9 @@ def main():
                 pass
             print("Exported web scene for layer named:" + str(layerName))
             # Change this to an absolute path that points to your KML files.
-        except:
+        except Exception as e:
             print("Could not execute on counter " + str(counter))
+            print("Error:", e.args[0])
             counter += 1
             pass
 

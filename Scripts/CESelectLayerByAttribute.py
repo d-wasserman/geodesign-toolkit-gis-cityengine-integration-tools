@@ -61,5 +61,4 @@ def selectObjByAttribute(attr, value):
 
 if __name__ == '__main__':
     selectObjByAttribute(fieldName, fieldValue)
-
     pass
