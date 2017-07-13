@@ -1,10 +1,10 @@
 # --------------------------------
-# Name: CEBatchWebSceneExport.py
-# Purpose: Batch export of CE layers to web scenes.
+# Name: CEBatchFBXExport.py
+# Purpose: Batch export of CE layers to game engine importable FBXs.
 # Current Owner: David Wasserman
-# Last Modified: 12/22/2015
+# Last Modified: 7/12/2017
 # Copyright:   (c) Co-Adaptive
-# CityEngine Vs: 2015.2
+# CityEngine Vs: 2017
 # Python Version:   2.7
 # License
 # Copyright 2015 David J. Wasserman
@@ -25,14 +25,35 @@
 # Import Modules
 
 from scripting import *
-
+import os
 # get a CityEngine instance
 ce = CE()
 
-outputFolder = "/BatchExportKML/"
+outputFolder = "/BatchExportFBX"
 generateBoolean = False
 deleteBoolean = False
+fileType="BINARY" #Or "TEXT"
+CollectTextures=True
+CreateShapeGroups=True
+IncludeMaterials=True
+ExportGeometry= "MODEL_GEOMETRY_FALLBACK"#["MODEL_GEOMETRY_FALLBACK", "MODEL_GEOMETRY", "SHAPE_GEOMETRY"]
 
+def assure_dir(Base_Dir_Path, Base_Name=""):
+    """Worker function will ensure that a directory exists. If it does not it, will create one. If an
+    optional basename is passed it will create a folder with the base name joined if it does not exist."""
+    if os.path.exists(Base_Dir_Path):
+        if Base_Name:
+            new_folder = os.path.join(Base_Dir_Path, Base_Name)
+            if os.path.exists(new_folder):
+                return new_folder
+            else:
+                os.makedirs(new_folder)
+                return new_folder
+        else:
+            return Base_Dir_Path
+    else:
+        os.makedirs(Base_Dir_Path)
+        return Base_Dir_Path
 
 # Turn off User Interface updates, or script might take forever.
 @noUIupdate
@@ -46,23 +67,29 @@ def main():
             ce.setSelection(layer)
             OID = ce.getOID(layer)
             layerName = ce.getName(layer)
+            if layerName == "Panorama" or layerName == "Scene Light":
+                continue  # skip
             if generateBoolean:
                 # generate models on selected shapes (assumes size of file is too big)
                 ce.generateModels(ce.selection())
                 ce.waitForUIIdle()
             print ("Setting export settings for layer named: " + str(layerName))
-            exportSettings = KMLExportModelSettings()
+            exportSettings = FBXExportModelSettings()
+            assure_dir(ce.toFSPath("models"),str(outputFolder).strip(r"/"))
             exportSettings.setOutputPath(ce.toFSPath("models") + str(outputFolder))
             exportSettings.setBaseName(layerName)
-            exportSettings.setCompression(False)
-            exportSettings.setTerrainLayers(exportSettings.TERRAIN_NONE)
+            exportSettings.setFileType(fileType)
+            exportSettings.setCollectTextures(CollectTextures)
+            exportSettings.setCreateShapeGroups(CreateShapeGroups)
+            exportSettings.setIncludeMaterials(IncludeMaterials)
+            exportSettings.setExportGeometry(ExportGeometry)
             ce.export(ce.selection()[0], exportSettings)
-            print ("Exported layer named: " + str(layerName) + "to models/BatchExport3WS")
+            print ("Exported layer named: " + str(layerName) + "to models/BatchExportFBX")
             counter += 1
             if deleteBoolean:
                 ce.delete(ce.selection())
                 pass
-            print("Exported web scene for layer named:" + str(layerName))
+            print("Exported FBX for layer named:" + str(layerName))
             # Change this to an absolute path that points to your KML files.
         except Exception as e:
             print("Could not execute on counter " + str(counter))

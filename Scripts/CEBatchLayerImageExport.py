@@ -29,7 +29,7 @@ from scripting import *
 # get a CityEngine instance
 ce = CE()
 # Declare variables
-outputFolder = "/BatchExport/"
+outputFolder = "\BatchExport/"
 width = 1920
 height = 1080
 fileType = ".png"
