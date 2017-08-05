@@ -23,15 +23,7 @@
 # limitations under the License.
 # --------------------------------
 # Import Modules
-import os, sys, arcpy, math, copy
-
-# Define Inputs
-inFeatureClass = arcpy.GetParameterAsText(0)
-outFeatureClass = arcpy.GetParameterAsText(1)
-StreetLength_LotArea = arcpy.GetParameter(2)  # Units of projection
-SizeField = arcpy.GetParameterAsText(3)  # CR: more descriptive
-BlockWidth = arcpy.GetParameter(4)
-referenceFeatureClassCentroid = arcpy.GetParameterAsText(5)  # optional reference FC to get centroid from
+import os, arcpy, copy
 
 
 # Function Definitions
@@ -124,10 +116,10 @@ def getFields(featureClass, excludedTolkens=["OID", "Geometry"], excludedFields=
             fcName = featureClass
         field_list = [f.name for f in arcpy.ListFields(featureClass) if f.type not in excludedTolkens
                       and f.name.lower() not in excludedFields]
-        arcPrint("The field list for {0} is:{1}".format(str(fcName), str(field_list)), True)
+        arc_print("The field list for {0} is:{1}".format(str(fcName), str(field_list)), True)
         return field_list
     except:
-        arcPrint(
+        arc_print(
                 "Could not get fields for the following input {0}, returned an empty list.".format(
                         str(featureClass)),
                 True)
@@ -137,23 +129,18 @@ def getFields(featureClass, excludedTolkens=["OID", "Geometry"], excludedFields=
         field_list = []
         return field_list
 
-
-def arcPrint(string, progressor_Bool=False):
-    # This function is used to simplify using arcpy reporting for tool creation,if progressor bool is true it will
-    # create a tool label.
-    try:
-        if progressor_Bool:
-            arcpy.SetProgressorLabel(string)
-            arcpy.AddMessage(string)
-            print(string)
-        else:
-            arcpy.AddMessage(string)
-            print(string)
-    except arcpy.ExecuteError:
-        arcpy.GetMessages(2)
-    except:
-        print("Could not create message, bad arguments.")
-        pass
+@arcToolReport
+def arc_print(string, progressor_Bool=False):
+    """ This function is used to simplify using arcpy reporting for tool creation,if progressor bool is true it will
+    create a tool label."""
+    casted_string = str(string)
+    if progressor_Bool:
+        arcpy.SetProgressorLabel(casted_string)
+        arcpy.AddMessage(casted_string)
+        print(casted_string)
+    else:
+        arcpy.AddMessage(casted_string)
+        print(casted_string)
 
 
 @arcToolReport()
@@ -247,12 +234,12 @@ def copyAlteredRow(row, fieldList, replacementDict):
                 else:
                     newRow.append(row[getFIndex(fieldList, field)])
             except:
-                arcPrint("Could not replace field {0} with its accepted value. Check field names for match.".format(
+                arc_print("Could not replace field {0} with its accepted value. Check field names for match.".format(
                         str(field)), True)
                 newRow.append(None)  # Append a null value where it cannot find a value to the list.
         return newRow
     except:
-        arcPrint("Could not get row fields for the following input {0}, returned an empty list.".format(str(row)), True)
+        arc_print("Could not get row fields for the following input {0}, returned an empty list.".format(str(row)), True)
         arcpy.AddWarning(
                 "Could not get row fields for the following input {0}, returned an empty list.".format(str(row)))
         newRow = []
@@ -278,52 +265,52 @@ def do_analysis(inFeatureClass, outFeatureClass, lengthNum, lengthField, blockWi
     # Delete Existing Output
     arcpy.env.overwriteOutput = True
     if arcpy.Exists(outFeatureClass):
-        arcPrint("Deleting existing output feature.", True)
+        arc_print("Deleting existing output feature.", True)
         arcpy.Delete_management(outFeatureClass)
     workspace = os.path.dirname(outFeatureClass)
     tempOutName = arcpy.ValidateTableName("TempBlockFC_1", workspace)
     tempOutFeature = os.path.join(workspace, tempOutName)
     # Add New Fields
-    arcPrint("Adding new fields for old object IDs and geometry name.", True)
+    arc_print("Adding new fields for old object IDs and geometry name.", True)
     OldObjectIDName = "UniqueFeatID"
     GeometryName = "CEStreetName"
     AddNewField(inFeatureClass, OldObjectIDName, "LONG")
     AddNewField(inFeatureClass, GeometryName, "TEXT")
     # Create feature class to get outputFC
-    arcPrint("Making a new output feature class using the input as a template", True)
+    arc_print("Making a new output feature class using the input as a template", True)
     OutPut = arcpy.CreateFeatureclass_management(workspace, tempOutName, "POLYLINE", template=inFeatureClass,
                                                  spatial_reference=inFeatureClass)
 
-    arcPrint("Gathering feature information.", True)
+    arc_print("Gathering feature information.", True)
     # Get feature description and spatial reference information for tool use
     desc = arcpy.Describe(inFeatureClass)
     SpatialRef = desc.spatialReference
     shpType = desc.shapeType
     srName = SpatialRef.name
-    arcPrint(
+    arc_print(
             "The shape type is {0}, and the current spatial reference is: {1}".format(str(shpType), str(srName)),
             True)
     # Get mean center of feature class (for pointGeo)
     if arcpy.Exists(referenceFeatureClass) and referenceFeatureClass != "#":
-        arcPrint("Calculating the mean center of the reference feature class.", True)
+        arc_print("Calculating the mean center of the reference feature class.", True)
         meanCenter = arcpy.MeanCenter_stats(referenceFeatureClass)
     else:
-        arcPrint("Calculating the mean center of the copied feature.", True)
+        arc_print("Calculating the mean center of the copied feature.", True)
         meanCenter = arcpy.MeanCenter_stats(inFeatureClass)
 
     fieldNames = getFields(inFeatureClass)
-    arcPrint("Getting point geometry from copied center.", True)
+    arc_print("Getting point geometry from copied center.", True)
     pointGeo = copy.deepcopy(arcpy.da.SearchCursor(meanCenter, ["SHAPE@"]).next()[0])  # Only one center, so one recor
 
     # Check if the optional Street Length/ Lot Area field is used.
     idsAndFieldSearchNames = ["SHAPE@"] + fieldNames
-    arcPrint("The search cursor's fields and tags are:{0}".format(str(idsAndFieldSearchNames)), True)
+    arc_print("The search cursor's fields and tags are:{0}".format(str(idsAndFieldSearchNames)), True)
     records = []
     with arcpy.da.SearchCursor(inFeatureClass, idsAndFieldSearchNames) as cursorSearch:
-        arcPrint("Loading input feature classes rows into a new record list.", True)
+        arc_print("Loading input feature classes rows into a new record list.", True)
         for search_row in cursorSearch:
             records.append(search_row)
-    arcPrint("Inserting new rows and geometries to new feature class.", True)
+    arc_print("Inserting new rows and geometries to new feature class.", True)
     count = 0
     with arcpy.da.InsertCursor(tempOutFeature, idsAndFieldSearchNames) as cursorInsert:
         if desc.shapeType == "Polyline":
@@ -331,14 +318,13 @@ def do_analysis(inFeatureClass, outFeatureClass, lengthNum, lengthField, blockWi
                 # Use two try statements, one time to try to catch the error
                 count += 1
                 try:
-                    arcPrint("A creating geometry dictionary for feature iteration: {0}.".format(str(count)))
+                    arc_print("A creating geometry dictionary for feature iteration: {0}.".format(str(count)))
                     geoDict = CreateMainStreetBlockCEGeometry(pointGeo, lineLength(row, lengthField, lengthNum,
                                                                                    idsAndFieldSearchNames),
                                                               blockWidthValue)
                     # print geoDict
                     for key in geoDict.keys():
                         try:
-                            # arcPrint(key)
                             rowList = copyAlteredRow(row, idsAndFieldSearchNames,
                                                      {"SHAPE@": geoDict[key], OldObjectIDName: count,
                                                       GeometryName: str(key)})
@@ -348,16 +334,16 @@ def do_analysis(inFeatureClass, outFeatureClass, lengthNum, lengthField, blockWi
                             pass
                 except:
                     arcpy.GetMessage(2)
-                    arcPrint("Failed on iteration {0}.".format(str(count)), True)
+                    arc_print("Failed on iteration {0}.".format(str(count)), True)
                     pass
         else:
-            arcPrint("Input geometry is not a polyline. Check arguments.", True)
+            arc_print("Input geometry is not a polyline. Check arguments.", True)
             arcpy.AddError("Input geometry is not a polyline. Check arguments.")
 
-    arcPrint("Projecting data into Web Mercator Auxiliary Sphere (a CityEngine compatible projection).", True)
+    arc_print("Projecting data into Web Mercator Auxiliary Sphere (a CityEngine compatible projection).", True)
     webMercatorAux = arcpy.SpatialReference(3857)
     arcpy.Project_management(OutPut, outFeatureClass, webMercatorAux)
-    arcPrint("Cleaning up intermediates.", True)
+    arc_print("Cleaning up intermediates.", True)
     arcpy.Delete_management(meanCenter)
     arcpy.Delete_management(OutPut)
     arcpy.DeleteField_management(inFeatureClass, OldObjectIDName)
@@ -373,5 +359,12 @@ def do_analysis(inFeatureClass, outFeatureClass, lengthNum, lengthField, blockWi
 # End do_analysis function
 # Main Script
 if __name__ == "__main__":
+    # Define Inputs
+    inFeatureClass = arcpy.GetParameterAsText(0)
+    outFeatureClass = arcpy.GetParameterAsText(1)
+    StreetLength_LotArea = arcpy.GetParameter(2)  # Units of projection
+    SizeField = arcpy.GetParameterAsText(3)  # CR: more descriptive
+    BlockWidth = arcpy.GetParameter(4)
+    referenceFeatureClassCentroid = arcpy.GetParameterAsText(5)  # optional reference FC to get centroid from
     do_analysis(inFeatureClass, outFeatureClass, StreetLength_LotArea, SizeField, BlockWidth,
                 referenceFeatureClassCentroid)

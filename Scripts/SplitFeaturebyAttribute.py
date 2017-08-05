@@ -28,11 +28,6 @@ import arcpy
 import os
 import numpy
 
-# Define Inputs
-inFeatureClass = arcpy.GetParameterAsText(0)
-outWorkSpace = arcpy.GetParameterAsText(1)
-uniqueField = arcpy.GetParameterAsText(2)
-compactWorkspace = arcpy.GetParameter(3)
 
 
 # Function Definitions
@@ -199,4 +194,9 @@ def do_analysis(inFeatureClass, outWorkSpace, explodeID, compactBool=True):
 
 # Main Script
 if __name__ == "__main__":
+    # Define Inputs
+    inFeatureClass = arcpy.GetParameterAsText(0)
+    outWorkSpace = arcpy.GetParameterAsText(1)
+    uniqueField = arcpy.GetParameterAsText(2)
+    compactWorkspace = arcpy.GetParameter(3)
     do_analysis(inFeatureClass, outWorkSpace, uniqueField, compactWorkspace)

@@ -26,11 +26,6 @@
 # Import Modules
 import os, math, arcpy, random
 
-# Define Inputs
-inFeatureClass = arcpy.GetParameterAsText(0)
-AddCompleteStreetRuleAttributes = arcpy.GetParameter(1)
-CreateDefaultStreetParameters = arcpy.GetParameter(2)
-CreateRandomCompStAttr = arcpy.GetParameter(3)
 
 # String Parameters
 streetWidth = "streetWidth"
@@ -471,5 +466,10 @@ def do_analysis(inFeatureClass, CompStAttr, DefaultStParam, RandomCompStr):
 # End do_analysis function
 # Main Script
 if __name__ == "__main__":
+    # Define Inputs
+    inFeatureClass = arcpy.GetParameterAsText(0)
+    AddCompleteStreetRuleAttributes = arcpy.GetParameter(1)
+    CreateDefaultStreetParameters = arcpy.GetParameter(2)
+    CreateRandomCompStAttr = arcpy.GetParameter(3)
     do_analysis(inFeatureClass, AddCompleteStreetRuleAttributes, CreateDefaultStreetParameters, CreateRandomCompStAttr)
 

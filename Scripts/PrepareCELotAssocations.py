@@ -25,13 +25,6 @@
 # Import Modules
 import os, sys, arcpy, math,copy
 
-# Define Inputs
-inFeatureClass = arcpy.GetParameterAsText(0)
-outFeatureClass = arcpy.GetParameterAsText(1)
-StreetLength_LotArea = arcpy.GetParameter(2)  # Units of current feature class
-SizeField = arcpy.GetParameterAsText(3)  # Field is used to get size of output sanitized geometries.
-referenceFeatureClassCentroid=arcpy.GetParameterAsText(4) #optional reference FC to get centroid from
-
 # Function Definitions
 def funcReport(function=None,reportBool=False):
     """This decorator function is designed to be used as a wrapper with other functions to enable basic try and except
@@ -89,23 +82,17 @@ def arcToolReport(function=None, arcToolMessageBool=False, arcProgressorBool=Fal
         return arcToolReport_Decorator(function)
 
 @arcToolReport
-def arcPrint(string, progressor_Bool=False):
-    # This function is used to simplify using arcpy reporting for tool creation,if progressor bool is true it will
-    # create a tool label.
-    try:
-        if progressor_Bool:
-            arcpy.SetProgressorLabel(string)
-            arcpy.AddMessage(string)
-            print(string)
-        else:
-            arcpy.AddMessage(string)
-            print(string)
-    except arcpy.ExecuteError:
-        arcpy.GetMessages(2)
-        pass
-    except:
-        print("Could not create message, bad arguments.")
-        pass
+def arc_print(string, progressor_Bool=False):
+    """ This function is used to simplify using arcpy reporting for tool creation,if progressor bool is true it will
+    create a tool label."""
+    casted_string = str(string)
+    if progressor_Bool:
+        arcpy.SetProgressorLabel(casted_string)
+        arcpy.AddMessage(casted_string)
+        print(casted_string)
+    else:
+        arcpy.AddMessage(casted_string)
+        print(casted_string)
 
 
 def getFIndex(field_names, field_name):
@@ -203,42 +190,42 @@ def do_analysis(inFeatureClass, outFeatureClass, Area, Field,referenceFeatureCla
         # Delete Existing Output
         arcpy.env.overwriteOutput = True
         if arcpy.Exists(outFeatureClass):
-            arcPrint("Deleting existing output feature.", True)
+            arc_print("Deleting existing output feature.", True)
             arcpy.Delete_management(outFeatureClass)
         # Copy/Project feature class to get outputFC
-        arcPrint("Making a copy of input feature class for output.", True)
+        arc_print("Making a copy of input feature class for output.", True)
         OutPut = arcpy.CopyFeatures_management(inFeatureClass)
-        arcPrint("Gathering feature information.", True)
+        arc_print("Gathering feature information.", True)
         # Get feature description and spatial reference information for tool use
         desc = arcpy.Describe(OutPut)
         SpatialRef = desc.spatialReference
         shpType = desc.shapeType
         srName = SpatialRef.name
-        arcPrint(
+        arc_print(
                 "The shape type is {0}, and the current spatial reference is: {1}".format(str(shpType), str(srName)),
                 True)
         # Get mean center of feature class (for pointGeo)
         if arcpy.Exists(referenceFeatureClass) and referenceFeatureClass != "#":
-            arcPrint("Calculating the mean center of the reference feature class.", True)
+            arc_print("Calculating the mean center of the reference feature class.", True)
             meanCenter = arcpy.MeanCenter_stats(referenceFeatureClass)
         else:
-            arcPrint("Calculating the mean center of the copied feature.", True)
+            arc_print("Calculating the mean center of the copied feature.", True)
             meanCenter = arcpy.MeanCenter_stats(inFeatureClass)
 
-        arcPrint("Getting point geometry from copied center.", True)
+        arc_print("Getting point geometry from copied center.", True)
         pointGeo = copy.deepcopy( arcpy.da.SearchCursor(meanCenter, ["SHAPE@"]).next()[0])  # Only one center, so one record
 
 
         # Check if the optional Street Length/ Lot Area field is used.
         if Field and FieldExist(OutPut,Field):
-            arcPrint("Using size field to create output geometries.", True)
+            arc_print("Using size field to create output geometries.", True)
             cursorFields = ["SHAPE@", "OID@", Field]
         else:
-            arcPrint("Using size input value to create same sized output geometries.", True)
+            arc_print("Using size input value to create same sized output geometries.", True)
             cursorFields = ["SHAPE@", "OID@"]
 
         with arcpy.da.UpdateCursor(OutPut, cursorFields) as cursor:
-            arcPrint("Replacing existing input geometry.", True)
+            arc_print("Replacing existing input geometry.", True)
             count = 1
             if desc.shapeType == "Polygon":
                 for row in cursor:
@@ -251,13 +238,13 @@ def do_analysis(inFeatureClass, outFeatureClass, Area, Field,referenceFeatureCla
                     except:
                         handleFailedLotUpdate(cursor, row, pointGeo, math.sqrt(lotArea(row, Field, Area, cursorFields)))
             else:
-                arcPrint("Input geometry is not a polygon. Check arguments.")
+                arc_print("Input geometry is not a polygon. Check arguments.")
                 arcpy.AddError("Input geometry is not a polygon. Check arguments.")
 
-            arcPrint("Projecting data into Web Mercator Auxiliary Sphere (a CityEngine compatible projection).", True)
+            arc_print("Projecting data into Web Mercator Auxiliary Sphere (a CityEngine compatible projection).", True)
             webMercatorAux = arcpy.SpatialReference(3857)
             arcpy.Project_management(OutPut, outFeatureClass, webMercatorAux)
-            arcPrint("Cleaning up intermediates.", True)
+            arc_print("Cleaning up intermediates.", True)
             arcpy.Delete_management(meanCenter)
             arcpy.Delete_management(OutPut)
             del SpatialRef, desc, cursor, webMercatorAux
@@ -270,4 +257,10 @@ def do_analysis(inFeatureClass, outFeatureClass, Area, Field,referenceFeatureCla
 # End do_analysis function
 # Main Script
 if __name__ == "__main__":
+    # Define Inputs
+    inFeatureClass = arcpy.GetParameterAsText(0)
+    outFeatureClass = arcpy.GetParameterAsText(1)
+    StreetLength_LotArea = arcpy.GetParameter(2)  # Units of current feature class
+    SizeField = arcpy.GetParameterAsText(3)  # Field is used to get size of output sanitized geometries.
+    referenceFeatureClassCentroid = arcpy.GetParameterAsText(4)  # optional reference FC to get centroid from
     do_analysis(inFeatureClass, outFeatureClass, StreetLength_LotArea, SizeField,referenceFeatureClassCentroid)
