@@ -92,7 +92,7 @@ def unique_values(table, field):
     return numpy.unique(data[field])
 
 @arcToolReport
-def FieldExist(featureclass, fieldname):
+def field_exist(featureclass, fieldname):
     """ Check if a field in a feature class field exists and return true it does, false if not."""
     fieldList = arcpy.ListFields(featureclass, fieldname)
     fieldCount = len(fieldList)
@@ -102,10 +102,10 @@ def FieldExist(featureclass, fieldname):
         return False
 
 @arcToolReport
-def AddNewField(in_table, field_name, field_type, field_precision="#", field_scale="#", field_length="#",
-                field_alias="#", field_is_nullable="#", field_is_required="#", field_domain="#"):
+def add_new_field(in_table, field_name, field_type, field_precision="#", field_scale="#", field_length="#",
+                  field_alias="#", field_is_nullable="#", field_is_required="#", field_domain="#"):
     # Add a new field if it currently does not exist...add field alone is slower than checking first.
-    if FieldExist(in_table, field_name):
+    if field_exist(in_table, field_name):
         print(field_name + " Exists")
         arcpy.AddMessage(field_name + " Exists")
     else:
@@ -117,7 +117,7 @@ def AddNewField(in_table, field_name, field_type, field_precision="#", field_sca
                                   field_is_nullable, field_is_required, field_domain)
 
 @arcToolReport
-def arcPrint(string, progressor_Bool=False):
+def arc_print(string, progressor_Bool=False):
     # This function is used to simplify using arcpy reporting for tool creation,if progressor bool is true it wll
     # create a tool label.
     try:
@@ -136,9 +136,24 @@ def arcPrint(string, progressor_Bool=False):
         pass
 
 @arcToolReport
-def constructSQLEqualityQuery(fieldName, value, dataSource):
-    # Creates a workspace sensitive equality query to be used in arcpy.
-    return "{0} = '{1}'".format(arcpy.AddFieldDelimiters(dataSource, fieldName), str(value))
+def constructSQLEqualityQuery(fieldName, value, dataSource, equalityOperator="=", noneEqualityOperator="is"):
+    """Creates a workspace sensitive equality query to be used in arcpy/SQL statements. If the value is a string,
+    quotes will be used for the query, otherwise they will be removed. Python 2-3 try except catch.(BaseString not in 3)
+    David Wasserman"""
+    try:  # Python 2
+        if isinstance(value, (basestring, str)):
+            return "{0} {1} '{2}'".format(arcpy.AddFieldDelimiters(dataSource, fieldName), equalityOperator, str(value))
+        if value is None:
+            return "{0} {1} {2}".format(arcpy.AddFieldDelimiters(dataSource, fieldName), noneEqualityOperator,"NULL")
+        else:
+            return "{0} {1} {2}".format(arcpy.AddFieldDelimiters(dataSource, fieldName), equalityOperator, str(value))
+    except:  # Python 3
+        if isinstance(value, (str)):  # Unicode only
+            return "{0} {1} '{2}'".format(arcpy.AddFieldDelimiters(dataSource, fieldName), equalityOperator, str(value))
+        if value is None:
+            return "{0} {1} {2}".format(arcpy.AddFieldDelimiters(dataSource, fieldName), noneEqualityOperator,"NULL")
+        else:
+            return "{0} {1} {2}".format(arcpy.AddFieldDelimiters(dataSource, fieldName), equalityOperator, str(value))
 
 
 # Main Function Definition
@@ -149,42 +164,42 @@ def do_analysis(inFeatureClass, outWorkSpace, explodeID, compactBool=True):
         if arcpy.Exists(outWorkSpace):
             arcpy.env.workspace = outWorkSpace
             arcpy.env.overwriteOutput = True
-            arcPrint("The current work space is: {0}.".format(outWorkSpace), True)
+            arc_print("The current work space is: {0}.".format(outWorkSpace), True)
             workSpaceTail = os.path.split(outWorkSpace)[1]
             newExplodeField = arcpy.ValidateFieldName("ExplodeID", outWorkSpace)
-            arcPrint("Adding a text explode ID to cast the target field as text.", True)
-            AddNewField(inFeatureClass, newExplodeField, "TEXT")
-            arcPrint("Calculating an explode ID for the newly added field equal to the field selected.", True)
+            arc_print("Adding a text explode ID to cast the target field as text.", True)
+            add_new_field(inFeatureClass, newExplodeField, "TEXT")
+            arc_print("Calculating an explode ID for the newly added field equal to the field selected.", True)
             arcpy.CalculateField_management(inFeatureClass, newExplodeField, "str(!" + str(explodeID) + "!)",
                                             "PYTHON_9.3")
-            arcPrint("Generating unique values from the explode ID field.", True)
+            arc_print("Generating unique values from the explode ID field.", True)
             explodeList = numpy.sort(unique_values(inFeatureClass, newExplodeField))
-            arcPrint(
+            arc_print(
                     "Using explode field's unique values to generate new feature classes in {0}.".format(
                             str(workSpaceTail)))
             for newFeatureClassName in explodeList:
                 try:
-                    arcPrint("Determining name and constructing query for new feature class.", True)
+                    arc_print("Determining name and constructing query for new feature class.", True)
                     newFCName = str(newFeatureClassName)
                     outExplodeFC = arcpy.ValidateTableName(newFCName, outWorkSpace)
                     expression = constructSQLEqualityQuery(newExplodeField, newFeatureClassName, inFeatureClass)
                     arcpy.Select_analysis(inFeatureClass, outExplodeFC, expression)
-                    arcPrint(
+                    arc_print(
                             "Selected out unique ID: {0} and created a new feature class in {1}".format(newFCName,
                                                                                                         workSpaceTail),
                             True)
                 except:
-                    arcPrint(
+                    arc_print(
                             "The unique value ID {0}, could not be extracted. Check arguments of tool.".format(
                                     str(newFCName)))
                     pass
             if compactBool:
-                arcPrint("Compacting workspace.", True)
+                arc_print("Compacting workspace.", True)
                 arcpy.Compact_management(outWorkSpace)
-            arcPrint("Tool execution complete.", True)
+            arc_print("Tool execution complete.", True)
             pass
         else:
-            arcPrint("The desired workspace does not exist. Tool execution terminated.", True)
+            arc_print("The desired workspace does not exist. Tool execution terminated.", True)
             arcpy.AddWarning("The desired workspace does not exist.")
 
     except arcpy.ExecuteError:
