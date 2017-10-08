@@ -33,6 +33,7 @@ outputFolder = "\BatchExport/"
 width = 1920
 height = 1080
 fileType = ".png"
+turnOffAllLayers=True
 generateBoolean = False
 deleteBoolean = False
 iterateThroughBookMarksBoolean = False
@@ -66,7 +67,10 @@ def main():
         "There are " + str(len(layers) - 2) + " layers in the current scene.")  # -2 To remove Panorama and Scene Light
     counter = 0
     # Turns off visibility of all layers.
-    turnLayersInvisible(layers)
+	if turnOffAllLayers:
+		turnLayersInvisible(layers)
+	else:
+		print("Not turning of layers...")
     print("Iterating through all layers")
     for layer in layers:
         try:
