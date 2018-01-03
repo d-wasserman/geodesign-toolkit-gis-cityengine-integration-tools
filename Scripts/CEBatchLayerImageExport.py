@@ -70,7 +70,7 @@ def main():
     if turnOffAllLayers:
         turnLayersInvisible(layers)
     else:
-        print("Not turning of layers...")
+        print("Not turning off layers...")
     print("Iterating through all layers")
     for layer in layers:
         try:
