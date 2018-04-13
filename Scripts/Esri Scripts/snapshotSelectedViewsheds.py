@@ -22,7 +22,9 @@ limitations under the License.
 from scripting import *
 import math
 
-hRes = 1080
+hRes = 1240
+nameBase = "360 "
+ext = ".png"
 
 # get a CityEngine instance
 ce = CE()
@@ -79,28 +81,28 @@ def getViewshed(viewshed):
     vsName  = ce.getName(viewshed)
     return vsPos,vsRot,vsAoV,vsPoIDist,vsRatio,vsName
 
-def snapshot360(view,vsName,res=1080):
+def snapshot360(view,vsName,extension=".png",prefix="",res=1080):
     # make six square snapshots
     view.setCameraAngleOfView(90.0)
     vdAoV = [(0,0),(0,90),(0,180),(0,-90),(90,0),(-90,0)]
     suffixes = ["_f","_l","_b","_r","_u","_d"]
     for i, suffix in enumerate(suffixes):
         view.setCameraRotation(vdAoV[i][0],vdAoV[i][1],0)
-        view.snapshot(ce.toFSPath('images/'+vsName+suffix+'.png'),res,res)
+        view.snapshot(ce.toFSPath('images/'+prefix+vsName+suffix+extension),res,res)
 
-def snapshotViewshed(view,viewshed,res=1080):
+def snapshotViewshed(view,viewshed,extension=".png",prefix="",res=1080):
     # get initial camera parameters
     camPos,camRot,camAoV,camPoIDist,camPersp = getCamera(view)
     # get viewshed parameters
     vsPos,vsRot,vsAoV,vsPoIDist,vsRatio,vsName = getViewshed(viewshed)
     if ce.isViewDome(viewshed):
         setCamera(view,vsPos,vsRot,vsAoV,vsPoIDist)
-        snapshot360(view,vsName,res)
+        snapshot360(view,vsName,extension,prefix,res)
     else:
         # set camera to viewshed parameters
         setCamera(view,vsPos,vsRot,vsAoV,vsPoIDist)
         # make a snapshot
-        view.snapshot(ce.toFSPath('images/'+vsName+'.png'),res*vsRatio,res)
+        view.snapshot(ce.toFSPath('images/'+prefix+vsName+extension),res*vsRatio,res)
     # reset camera to initial camera parameters
     setCamera(view,camPos,camRot,camAoV,camPoIDist,camPersp)
     
@@ -126,7 +128,7 @@ if __name__ == '__main__':
         else:
             ce.setLayerPreferences(tmpLayer,"Visible",False)
         tmpViewshed = ce.copy(viewshed,False,tmpLayer)
-        snapshotViewshed(view,tmpViewshed[0],hRes)
+        snapshotViewshed(view,tmpViewshed[0],ext,nameBase,hRes)
         ce.delete(tmpViewshed)
     
     # clean up
