@@ -87,7 +87,20 @@ def arcToolReport(function=None, arcToolMessageBool=False, arcProgressorBool=Fal
         return arcToolReport_Decorator(function)
 @arcToolReport
 def unique_values(table, field):
-    # Get an iterable with unique values
+    """Return a sorted numpy array of unique values from a single field in a table.
+
+    Parameters
+    ----------
+    table : str
+        Path to the input table or feature class.
+    field : str
+        Field name to read unique values from.
+
+    Returns
+    -------
+    numpy.ndarray
+        Array of unique values in the field.
+    """
     data = arcpy.da.TableToNumPyArray(table, [field])
     return numpy.unique(data[field])
 
@@ -104,7 +117,32 @@ def field_exist(featureclass, fieldname):
 @arcToolReport
 def add_new_field(in_table, field_name, field_type, field_precision="#", field_scale="#", field_length="#",
                   field_alias="#", field_is_nullable="#", field_is_required="#", field_domain="#"):
-    # Add a new field if it currently does not exist...add field alone is slower than checking first.
+    """Add a field to a table only if it does not already exist. Checking first is faster than
+    calling AddField unconditionally.
+
+    Parameters
+    ----------
+    in_table : str
+        Path to the input table or feature class.
+    field_name : str
+        Name of the field to add.
+    field_type : str
+        ArcGIS field type string (e.g. "DOUBLE", "TEXT", "LONG").
+    field_precision : str or int, optional
+        Number of digits for numeric fields. Defaults to "#".
+    field_scale : str or int, optional
+        Number of decimal places for numeric fields. Defaults to "#".
+    field_length : str or int, optional
+        Maximum character length for text fields. Defaults to "#".
+    field_alias : str, optional
+        Alias displayed in ArcGIS. Defaults to "#".
+    field_is_nullable : str, optional
+        Whether the field allows NULL values. Defaults to "#".
+    field_is_required : str, optional
+        Whether the field is required by the schema. Defaults to "#".
+    field_domain : str, optional
+        Name of a domain to assign to the field. Defaults to "#".
+    """
     if field_exist(in_table, field_name):
         print(field_name + " Exists")
         arcpy.AddMessage(field_name + " Exists")
@@ -159,7 +197,23 @@ def constructSQLEqualityQuery(fieldName, value, dataSource, equalityOperator="="
 # Main Function Definition
 @arcToolReport
 def do_analysis(inFeatureClass, outWorkSpace, explodeID, compactBool=True):
-    # This tool will split a feature class into multiple feature classes based on a field
+    """Split a feature class into multiple feature classes, one per unique value of a target field.
+
+    A temporary text field (ExplodeID) is added to the input, populated with the string
+    representation of the target field, then used to select and export each unique value
+    into its own output feature class in outWorkSpace.
+
+    Parameters
+    ----------
+    inFeatureClass : str
+        Path to the input feature class to split.
+    outWorkSpace : str
+        Path to the output workspace (file GDB or folder) for result feature classes.
+    explodeID : str
+        Name of the field whose unique values define the split.
+    compactBool : bool, optional
+        If True, compact the output workspace after splitting (default True).
+    """
     try:
         if arcpy.Exists(outWorkSpace):
             arcpy.env.workspace = outWorkSpace

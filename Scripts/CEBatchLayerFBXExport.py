@@ -58,7 +58,24 @@ def assure_dir(Base_Dir_Path, Base_Name=""):
 # Turn off User Interface updates, or script might take forever.
 @noUIupdate
 def main():
-    # This function will export in batch web scenes to the input outputFolder
+    """Batch-export every layer in the current CityEngine scene to an FBX file.
+
+    Iterates all scene layers, skips ``Panorama`` and ``Scene Light``, and exports
+    each to ``models/<outputFolder>/<layerName>.fbx`` using the settings declared at
+    the top of the script.  Optionally generates models before export and/or deletes
+    each layer after export.
+
+    Configuration (module-level variables):
+        outputFolder (str): Output subfolder under the project's models/ directory.
+        generateBoolean (bool): Regenerate procedural models before export.
+        deleteBoolean (bool): Delete each layer from the scene after export.
+        fileType (str): FBX encoding -- ``"BINARY"`` or ``"TEXT"``.
+        CollectTextures (bool): Bundle textures with the export.
+        CreateShapeGroups (bool): Group shapes in the FBX node hierarchy.
+        IncludeMaterials (bool): Include material assignments.
+        ExportGeometry (str): Geometry source -- ``"MODEL_GEOMETRY_FALLBACK"``,
+            ``"MODEL_GEOMETRY"``, or ``"SHAPE_GEOMETRY"``.
+    """
     layers = ce.getObjectsFrom(ce.scene, ce.isLayer)
     print("There are " + str(len(layers)) + " layers in the current scene.")
     counter = 0

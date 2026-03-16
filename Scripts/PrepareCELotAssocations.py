@@ -119,7 +119,32 @@ def FieldExist(featureclass, fieldname):
 def AddNewField(in_table, field_name, field_type, field_precision="#", field_scale="#", field_length="#",
                 field_alias="#",
                 field_is_nullable="#", field_is_required="#", field_domain="#"):
-    # Add a new field if it currently does not exist...add field alone is slower than checking first.
+    """Add a field to a table only if it does not already exist. Checking first is faster than
+    calling AddField unconditionally.
+
+    Parameters
+    ----------
+    in_table : str
+        Path to the input table or feature class.
+    field_name : str
+        Name of the field to add.
+    field_type : str
+        ArcGIS field type string (e.g. "DOUBLE", "TEXT", "LONG").
+    field_precision : str or int, optional
+        Number of digits for numeric fields. Defaults to "#".
+    field_scale : str or int, optional
+        Number of decimal places for numeric fields. Defaults to "#".
+    field_length : str or int, optional
+        Maximum character length for text fields. Defaults to "#".
+    field_alias : str, optional
+        Alias displayed in ArcGIS. Defaults to "#".
+    field_is_nullable : str, optional
+        Whether the field allows NULL values. Defaults to "#".
+    field_is_required : str, optional
+        Whether the field is required by the schema. Defaults to "#".
+    field_domain : str, optional
+        Name of a domain to assign to the field. Defaults to "#".
+    """
     if FieldExist(in_table, field_name):
         print(field_name + " Exists")
         arcpy.AddMessage(field_name + " Exists")
@@ -134,7 +159,24 @@ def AddNewField(in_table, field_name, field_type, field_precision="#", field_sca
 
 @arcToolReport
 def CreateLotCEGeometry(pointObj, translationDistance):
-    # Create a polygon object consisting of a simple square based on the location of a passed point
+    """Create a square polygon centered on pointObj whose side length equals translationDistance.
+
+    The corner offset is half of translationDistance, producing a square with the given
+    side length centered at the input point. Used to generate uniform lot representations
+    at a single reference location for CityEngine import.
+
+    Parameters
+    ----------
+    pointObj : arcpy.PointGeometry
+        Center point of the output square.
+    translationDistance : float
+        Side length of the square in coordinate system units.
+
+    Returns
+    -------
+    arcpy.Polygon
+        A four-vertex square polygon.
+    """
     cornerOffset = (translationDistance) * .5
     firstCorner = pointObj.getPart(0)
     secondCorner = pointObj.getPart(0)

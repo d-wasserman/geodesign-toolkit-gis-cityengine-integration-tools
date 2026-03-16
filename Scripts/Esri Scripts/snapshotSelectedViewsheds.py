@@ -30,6 +30,21 @@ ext = ".png"
 ce = CE()
 
 def getCamera(view):
+    """Capture the current camera state from a 3D viewport.
+
+    Parameters
+    ----------
+    view :
+        CityEngine 3D viewport object.
+
+    Returns
+    -------
+    tuple
+        (camPos, camRot, camAoV, camPoIDist, camPersp) where camPos is [x, y, z]
+        position, camRot is [pitch, yaw, roll] in degrees, camAoV is angle of view
+        in degrees, camPoIDist is distance to the point of interest, and camPersp is
+        True for perspective or False for orthographic projection.
+    """
     camPos      = view.getCameraPosition()
     camRot      = view.getCameraRotation()
     camAoV      = view.getCameraAngleOfView()
@@ -41,6 +56,25 @@ def getCamera(view):
     return camPos,camRot,camAoV,camPoIDist,camPersp
 
 def setCamera(view,camPos,camRot,camAoV,camPoIDist,camPersp = True):
+    """Apply a camera state to a 3D viewport.
+
+    The angle of view is clamped to 160 degrees to avoid extreme distortion.
+
+    Parameters
+    ----------
+    view :
+        CityEngine 3D viewport object.
+    camPos : list
+        [x, y, z] camera position.
+    camRot : list
+        [pitch, yaw, roll] camera rotation in degrees.
+    camAoV : float
+        Desired camera angle of view in degrees (clamped to 160).
+    camPoIDist : float
+        Distance from camera to point of interest.
+    camPersp : bool, optional
+        True for perspective projection, False for orthographic (default True).
+    """
     view.setCameraPosition(camPos[0],camPos[1],camPos[2])
     view.setCameraRotation(camRot[0],camRot[1],camRot[2])
     view.setPoIDistance(camPoIDist)
@@ -49,6 +83,28 @@ def setCamera(view,camPos,camRot,camAoV,camPoIDist,camPersp = True):
     print("Camera set.")
 
 def getViewshed(viewshed):
+    """Extract viewshed parameters from a Viewshed, ViewDome, or ViewCorridor analysis object.
+
+    Handles three analysis object types differently:
+    - Viewshed: reads tilt, heading, horizontal angle of view, and view distance.
+    - ViewDome: uses 360-degree AoV and reads view distance; aspect ratio is 1.
+    - ViewCorridor: computes rotation by vector math toward the POI; reads AoV and POI distance.
+
+    Parameters
+    ----------
+    viewshed :
+        CityEngine analysis object (Viewshed, ViewDome, or ViewCorridor).
+
+    Returns
+    -------
+    tuple or None
+        (vsPos, vsRot, vsAoV, vsPoIDist, vsRatio, vsName) where vsPos is [x, y, z]
+        observer position, vsRot is [pitch, yaw, roll] in degrees, vsAoV is horizontal
+        angle of view in degrees (360 for domes), vsPoIDist is distance to the point of
+        interest or view distance, vsRatio is the width-to-height aspect ratio for the
+        output image, and vsName is the object name used in the output filename.
+        Returns None if viewshed is not a recognized analysis type.
+    """
     vsPos   = ce.getObserverPoint(viewshed)
     vsRot   = [0.0, 0.0, 0.0]
     if ce.isViewshed(viewshed):
@@ -82,7 +138,24 @@ def getViewshed(viewshed):
     return vsPos,vsRot,vsAoV,vsPoIDist,vsRatio,vsName
 
 def snapshot360(view,vsName,extension=".png",prefix="",res=1080):
-    # make six square snapshots
+    """Capture six square snapshots covering all directions for a 360-degree view dome.
+
+    The six images face front (_f), left (_l), back (_b), right (_r), up (_u), and
+    down (_d).  Each is saved to ``images/<prefix><vsName><suffix><extension>``.
+
+    Parameters
+    ----------
+    view :
+        CityEngine 3D viewport object.
+    vsName : str
+        Base name of the viewshed object, used in output filenames.
+    extension : str, optional
+        Output image format extension (default ".png").
+    prefix : str, optional
+        Prefix string prepended to all output filenames (default "").
+    res : int, optional
+        Square image resolution in pixels (default 1080).
+    """
     view.setCameraAngleOfView(90.0)
     vdAoV = [(0,0),(0,90),(0,180),(0,-90),(90,0),(-90,0)]
     suffixes = ["_f","_l","_b","_r","_u","_d"]
@@ -91,6 +164,30 @@ def snapshot360(view,vsName,extension=".png",prefix="",res=1080):
         view.snapshot(ce.toFSPath('images/'+prefix+vsName+suffix+extension),res,res)
 
 def snapshotViewshed(view,viewshed,extension=".png",prefix="",res=1080):
+    """Capture a snapshot (or set of 360 snapshots) from the perspective of a viewshed object.
+
+    Saves the initial camera state, positions the camera at the viewshed observer point,
+    takes the snapshot(s), then restores the original camera state.
+
+    For ViewDomes, delegates to snapshot360() to produce six directional images.
+    For Viewsheds and ViewCorridors, produces a single image whose width is scaled
+    by the viewshed's aspect ratio (vsRatio).
+
+    Output images are written to the project's ``images/`` directory.
+
+    Parameters
+    ----------
+    view :
+        CityEngine 3D viewport object.
+    viewshed :
+        CityEngine analysis object (Viewshed, ViewDome, or ViewCorridor).
+    extension : str, optional
+        Output image format extension (default ".png").
+    prefix : str, optional
+        Prefix string prepended to all output filenames (default "").
+    res : int, optional
+        Base image height in pixels; width is res * vsRatio (default 1080).
+    """
     # get initial camera parameters
     camPos,camRot,camAoV,camPoIDist,camPersp = getCamera(view)
     # get viewshed parameters

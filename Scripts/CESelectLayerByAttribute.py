@@ -36,6 +36,19 @@ fieldValue = "ladder"
 # Main Function
 
 def selectObjByAttribute(attr, value):
+    """Select all CityEngine layers that contain at least one object whose attribute matches value.
+
+    Iterates every layer in the scene, inspects each object's named attribute, and adds the
+    layer to the selection list on the first match found.  Sets the scene selection to the
+    resulting list and waits for the UI to become idle.
+
+    Parameters
+    ----------
+    attr : str
+        Name of the CityEngine object attribute to evaluate (e.g. ``"Crosswalk_End"``).
+    value :
+        Value to match against the attribute (compared with ``==``).
+    """
     layers = ce.getObjectsFrom(ce.scene, ce.isLayer)
     print(
         "There are " + str(len(layers) - 2) + " layers in the current scene.")  # -2 To remove Panorama and Scene Light

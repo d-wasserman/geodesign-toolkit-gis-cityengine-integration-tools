@@ -188,11 +188,35 @@ def field_exist(featureclass, fieldname):
         return False
 
 
-# CR: add comment describing functionality and parameter purposes (apply to all instances)
 @arc_tool_report
 def add_new_field(in_table, field_name, field_type, field_precision="#", field_scale="#", field_length="#",
                   field_alias="#", field_is_nullable="#", field_is_required="#", field_domain="#"):
-    # Add a new field if it currently does not exist...add field alone is slower than checking first.
+    """Add a field to a table only if it does not already exist. Checking first is faster than calling
+    AddField unconditionally.
+
+    Parameters
+    ----------
+    in_table : str
+        Path to the input table or feature class.
+    field_name : str
+        Name of the field to add.
+    field_type : str
+        ArcGIS field type string (e.g. "DOUBLE", "TEXT", "LONG").
+    field_precision : str or int, optional
+        Number of digits for numeric fields. Defaults to "#".
+    field_scale : str or int, optional
+        Number of decimal places for numeric fields. Defaults to "#".
+    field_length : str or int, optional
+        Maximum character length for text fields. Defaults to "#".
+    field_alias : str, optional
+        Alias displayed in ArcGIS. Defaults to "#".
+    field_is_nullable : str, optional
+        Whether the field allows NULL values. Defaults to "#".
+    field_is_required : str, optional
+        Whether the field is required by the schema. Defaults to "#".
+    field_domain : str, optional
+        Name of a domain to assign to the field. Defaults to "#".
+    """
     if field_exist(in_table, field_name):
         print(field_name + " Exists")
         arcpy.AddMessage(field_name + " Exists")
@@ -206,6 +230,18 @@ def add_new_field(in_table, field_name, field_type, field_precision="#", field_s
 
 @arc_tool_report
 def buff_dist(bikelnWidth):
+    """Return a plausible bike lane buffer width (meters) based on the given bike lane width.
+
+    Parameters
+    ----------
+    bikelnWidth : float
+        Width of the adjacent bike lane in meters.
+
+    Returns
+    -------
+    float
+        1.2 m buffer for wide lanes (>1.6 m), 0 or 1 m randomly for narrow lanes, 0 for no lane.
+    """
     if bikelnWidth > 1.6:
         return 1.2
     if bikelnWidth > 0:
@@ -215,6 +251,20 @@ def buff_dist(bikelnWidth):
 
 @arc_tool_report
 def if_below_thresh_zero(number, threshold):
+    """Return 0 if number is below threshold, otherwise return 1.
+
+    Parameters
+    ----------
+    number : float
+        Value to test.
+    threshold : float
+        Comparison threshold.
+
+    Returns
+    -------
+    int
+        0 if number < threshold, else 1.
+    """
     if number < threshold:
         return 0
     else:
@@ -222,9 +272,28 @@ def if_below_thresh_zero(number, threshold):
 
 @arc_tool_report
 def even_street_widths(lanesCount, lnWidth, additionalWidth=0):
+    """Calculate a street width that uses an even number of travel lanes.
+
+    If lanesCount is odd it is incremented by one so the result is always
+    symmetric. Any extra width (bike lanes, parking, etc.) is added on top.
+
+    Parameters
+    ----------
+    lanesCount : int
+        Desired number of travel lanes.
+    lnWidth : float
+        Width of a single travel lane in meters.
+    additionalWidth : float, optional
+        Extra width to add beyond the travel lanes (default 0).
+
+    Returns
+    -------
+    float
+        Total street width in meters.
+    """
     if lanesCount % 2 == 0:
         stWidth = (lnWidth * lanesCount) + additionalWidth
-        return stWidth  # From bike lanes and other random features
+        return stWidth
     else:
         lanesCount += 1
         stWidth = ((lnWidth * lanesCount) + additionalWidth)
@@ -232,6 +301,18 @@ def even_street_widths(lanesCount, lnWidth, additionalWidth=0):
 
 @arc_tool_report
 def parking_width(string):
+    """Return the standard parking lane width (meters) for a given parking type.
+
+    Parameters
+    ----------
+    string : str
+        Parking type label. Currently supports ``"Parallel"``.
+
+    Returns
+    -------
+    float
+        2.44 m for parallel parking, 0 for no parking or unrecognized type.
+    """
     if string == "Parallel":
         return 2.44
     else:
@@ -240,8 +321,30 @@ def parking_width(string):
 # Main Function
 
 # Function Definitions
-def populate_street_parameters(in_features, group_id,filter_query,comp_st_attr, default_st_param, rand_comp_str):
-    # Populate a feature class with CityEngine street parameters and complete street rule attributes/values
+def populate_street_parameters(in_features, group_id, filter_query, comp_st_attr, default_st_param, rand_comp_str):
+    """Add CityEngine street parameter fields and Complete Street Rule attribute fields to a feature class,
+    and optionally populate them with default or randomized values.
+
+    Street shape parameters (streetWidth, laneWidth, sidewalkWidth, etc.) are always added.
+    Complete Street Rule attributes (bike lanes, parking, transit, sidewalk amenities, etc.) are added
+    only when comp_st_attr is True.  Default/random values are written only when the corresponding
+    boolean flags are True.
+
+    Parameters
+    ----------
+    in_features : str
+        Path to the input polyline feature class.
+    group_id :
+        Reserved for future grouping logic; not currently used.
+    filter_query :
+        Reserved for future filtering logic; not currently used.
+    comp_st_attr : bool
+        If True, add all Complete Street Rule attribute fields.
+    default_st_param : bool
+        If True, populate street parameter and attribute fields with randomized plausible default values.
+    rand_comp_str : bool
+        If True (and comp_st_attr is also True), populate Complete Street Rule fields with randomized values.
+    """
     try:
         arc_print("Defining workspace strings and street parameter street names.")
         # String and path definitions

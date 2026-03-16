@@ -37,7 +37,16 @@ deleteBoolean = False
 # Turn off User Interface updates, or script might take forever.
 @noUIupdate
 def main():
-    # This function will export in batch web scenes to the input outputFolder
+    """Batch-export every layer in the current CityEngine scene to a CityEngine Web Scene (.3ws).
+
+    Iterates all scene layers and exports each to ``models/<outputFolder>/<layerName>.3ws``.
+    Optionally generates models before export and/or deletes each layer after export.
+
+    Configuration (module-level variables):
+        outputFolder (str): Output subfolder under the project's models/ directory.
+        generateBoolean (bool): Regenerate procedural models before export.
+        deleteBoolean (bool): Delete each layer from the scene after export.
+    """
     layers = ce.getObjectsFrom(ce.scene, ce.isLayer)
     print("There are " + str(len(layers)) + " layers in the current scene.")
     counter = 0
